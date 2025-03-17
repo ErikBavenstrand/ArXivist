@@ -9,25 +9,21 @@ class AbstractUnitOfWork(ABC):
     papers: AbstractPaperRepository
     """A `Paper` domain object repository."""
 
-    @abstractmethod
     def __enter__(self) -> "AbstractUnitOfWork":
         """Enter the Unit of Work context.
 
         Returns:
             The Unit of Work.
         """
-        raise NotImplementedError
+        return self
 
-    @abstractmethod
-    def __exit__(self, exc_type: type, exc_val: Exception, exc_tb: object) -> None:
+    def __exit__(self, *args) -> None:
         """Exit the Unit of Work context.
 
         Args:
-            exc_type: Exception type.
-            exc_val: Exception value.
-            exc_tb: Exception traceback.
+            args: The arguments passed to the `__exit__` method.
         """
-        raise NotImplementedError
+        self.rollback()
 
     @abstractmethod
     def commit(self) -> None:

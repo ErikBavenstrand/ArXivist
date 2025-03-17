@@ -15,7 +15,7 @@ engine = create_engine(config.DATABASE_URL)
 Base.metadata.create_all(engine)
 session_factory = sessionmaker(bind=engine)
 
-uow = SqlAlchemyUnitOfWork(session_factory)
+uow = SqlAlchemyUnitOfWork()
 rss_client = ArXivRSSFetcher(FeedparserRSSClient())
 
 

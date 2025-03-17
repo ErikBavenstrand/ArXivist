@@ -1,12 +1,9 @@
 import datetime
-from typing import Generator
 
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 
 from arxivist.domain.paper import Category, Paper
-from arxivist.infrastructure.orm import Base
 from arxivist.infrastructure.repository import SqlAlchemyPaperRepository
 
 
@@ -21,26 +18,11 @@ def sample_paper() -> Paper:
     )
 
 
-@pytest.fixture(scope="module")
-def in_memory_db() -> Generator[Session, None, None]:
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(engine)
-
-    SessionFactory = sessionmaker(bind=engine)
-    session = SessionFactory()
-
-    try:
-        yield session
-    finally:
-        session.close()
-        engine.dispose()
-
-
 class TestSqlAlchemyPaperRepository:
     def test_add_and_get_paper(
-        self, in_memory_db: Session, sample_paper: Paper
+        self, in_memory_sqlite_session: Session, sample_paper: Paper
     ) -> None:
-        repo = SqlAlchemyPaperRepository(in_memory_db)
+        repo = SqlAlchemyPaperRepository(in_memory_sqlite_session)
 
         repo.add(sample_paper)
         retrieved_paper = repo.get(sample_paper.arxiv_id)
@@ -57,9 +39,9 @@ class TestSqlAlchemyPaperRepository:
         assert len(all_papers) == 0
 
     def test_prevent_duplicate_add_paper(
-        self, in_memory_db: Session, sample_paper: Paper
+        self, in_memory_sqlite_session: Session, sample_paper: Paper
     ) -> None:
-        repo = SqlAlchemyPaperRepository(in_memory_db)
+        repo = SqlAlchemyPaperRepository(in_memory_sqlite_session)
 
         repo.add(sample_paper)
         repo.add(sample_paper)
@@ -72,8 +54,10 @@ class TestSqlAlchemyPaperRepository:
         papers = repo.list()
         assert len(papers) == 0
 
-    def test_delete_paper(self, in_memory_db: Session, sample_paper: Paper) -> None:
-        repo = SqlAlchemyPaperRepository(in_memory_db)
+    def test_delete_paper(
+        self, in_memory_sqlite_session: Session, sample_paper: Paper
+    ) -> None:
+        repo = SqlAlchemyPaperRepository(in_memory_sqlite_session)
 
         repo.add(sample_paper)
         repo.delete(sample_paper.arxiv_id)
@@ -81,8 +65,8 @@ class TestSqlAlchemyPaperRepository:
         all_papers = repo.list()
         assert len(all_papers) == 0
 
-    def test_list_papers(self, in_memory_db: Session) -> None:
-        repo = SqlAlchemyPaperRepository(in_memory_db)
+    def test_list_papers(self, in_memory_sqlite_session: Session) -> None:
+        repo = SqlAlchemyPaperRepository(in_memory_sqlite_session)
 
         sample_paper_1 = Paper(
             arxiv_id="2025.67890",
