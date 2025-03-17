@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
 
-from arxivist.application.ports.repositories import (
-    AbstractPaperRepository,
-)
+from arxivist.application.ports.repository import AbstractPaperRepository
 
 
 class AbstractUnitOfWork(ABC):

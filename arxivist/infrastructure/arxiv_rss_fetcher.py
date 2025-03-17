@@ -1,21 +1,28 @@
 import datetime
 import time
+from typing import Any
 
-import feedparser
-from feedparser import FeedParserDict
-
-from arxivist.application.ports.arxiv_client import AbstractArXivClient
+from arxivist.application.ports.paper_fetcher import AbstractPaperFetcher
+from arxivist.application.ports.rss_fetcher import AbstractRSSFetcher
 from arxivist.domain.paper import Category, Paper
 
 
-class ArXivRSSClient(AbstractArXivClient):
-    """An ArXiv client that fetches papers from the ArXiv RSS feed."""
+class ArXivRSSFetcher(AbstractPaperFetcher):
+    """An ArXiv fetcher that extracts papers from the ArXiv RSS feed."""
 
     ARXIV_RSS_URL = "https://arxiv.org/rss/"
     """The ArXiv RSS feed URL."""
 
+    def __init__(self, rss_fetcher: AbstractRSSFetcher) -> None:
+        """Initializes the `ArXivRSSClient` with the given RSS client.
+
+        Args:
+            rss_fetcher: The RSS fetcher to use for fetching the ArXiv RSS feed.
+        """
+        self.rss_fetcher = rss_fetcher
+
     def fetch_papers(self, categories: set[Category]) -> list[Paper]:
-        """Fetches the latest papers from the ArXiv RSS feed for the given categories.
+        """Fetch the latest papers from the ArXiv RSS feed for the given categories.
 
         Args:
             categories: The `Category` domain objects to filter the papers by.
@@ -28,7 +35,7 @@ class ArXivRSSClient(AbstractArXivClient):
         """
         papers: list[Paper] = []
         arxiv_rss_url = f"{self.ARXIV_RSS_URL}{'+'.join(map(str, categories))}"
-        entries: list[FeedParserDict] = feedparser.parse(arxiv_rss_url).get(  # type: ignore
+        entries: list[dict[str, Any]] = self.rss_fetcher.parse(arxiv_rss_url).get(
             "entries", []
         )
 
@@ -55,11 +62,11 @@ class ArXivRSSClient(AbstractArXivClient):
         return papers
 
     @staticmethod
-    def _extract_arxiv_id(entry: FeedParserDict) -> str:
+    def _extract_arxiv_id(entry: dict[str, Any]) -> str:
         """Extracts the ArXiv ID from an RSS feed entry.
 
         Args:
-            entry: The RSS feed entry.
+            entry: The RSS feed entry as a dictionary.
 
         Raises:
             ValueError: If the ArXiv ID is missing.
@@ -73,11 +80,11 @@ class ArXivRSSClient(AbstractArXivClient):
         return arxiv_id.split(":")[-1].strip()
 
     @staticmethod
-    def _extract_title(entry: FeedParserDict) -> str:
+    def _extract_title(entry: dict[str, Any]) -> str:
         """Extracts the title from an RSS feed entry.
 
         Args:
-            entry: The RSS feed entry.
+            entry: The RSS feed entry as a dictionary.
 
         Raises:
             ValueError: If the title is missing.
@@ -91,11 +98,11 @@ class ArXivRSSClient(AbstractArXivClient):
         return title.strip()
 
     @staticmethod
-    def _extract_abstract(entry: FeedParserDict) -> str:
+    def _extract_abstract(entry: dict[str, Any]) -> str:
         """Extracts the abstract from an RSS feed entry.
 
         Args:
-            entry: The RSS feed entry.
+            entry: The RSS feed entry as a dictionary.
 
         Raises:
             ValueError: If the abstract is missing.
@@ -109,11 +116,11 @@ class ArXivRSSClient(AbstractArXivClient):
         return abstract.split("Abstract:")[-1].strip().replace("\n", " ")
 
     @staticmethod
-    def _extract_published_date(entry: FeedParserDict) -> datetime.date:
+    def _extract_published_date(entry: dict[str, Any]) -> datetime.date:
         """Extracts the published date from an RSS feed entry.
 
         Args:
-            entry: The RSS feed entry.
+            entry: The RSS feed entry as a dictionary.
 
         Raises:
             ValueError: If the published date is missing.
@@ -127,11 +134,11 @@ class ArXivRSSClient(AbstractArXivClient):
         return datetime.datetime.fromtimestamp(time.mktime(published_parsed)).date()
 
     @staticmethod
-    def _extract_categories(entry: FeedParserDict) -> set[Category]:
+    def _extract_categories(entry: dict[str, Any]) -> set[Category]:
         """Extracts the categories from an RSS feed entry.
 
         Args:
-            entry: The RSS feed entry.
+            entry: The RSS feed entry as a dictionary.
 
         Returns:
             A set of `Category` domain objects.

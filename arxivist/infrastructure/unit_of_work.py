@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session, sessionmaker
 
 from arxivist.application.ports.unit_of_work import AbstractUnitOfWork
-from arxivist.infrastructure.repositories import (
+from arxivist.infrastructure.repository import (
     SqlAlchemyPaperRepository,
 )
 

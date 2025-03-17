@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 
 from arxivist import config
 from arxivist.domain.paper import Category, Paper
-from arxivist.infrastructure.arxiv_rss_client import ArXivRSSClient
+from arxivist.infrastructure.arxiv_rss_fetcher import ArXivRSSClient
 from arxivist.infrastructure.orm import Base
 from arxivist.infrastructure.unit_of_work import SqlAlchemyUnitOfWork
 

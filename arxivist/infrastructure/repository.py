@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from arxivist.application.ports.repositories import (
+from arxivist.application.ports.repository import (
     AbstractPaperRepository,
 )
 from arxivist.domain.paper import Category, Paper
