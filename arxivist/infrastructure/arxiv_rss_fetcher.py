@@ -2,12 +2,12 @@ import datetime
 import time
 from typing import Any
 
-from arxivist.application.ports.paper_fetcher import AbstractPaperFetcher
+from arxivist.application.ports.arxiv_fetcher import AbstractArXivFetcher
 from arxivist.application.ports.rss_fetcher import AbstractRSSFetcher
 from arxivist.domain.paper import Category, Paper
 
 
-class ArXivRSSFetcher(AbstractPaperFetcher):
+class ArXivRSSFetcher(AbstractArXivFetcher):
     """An ArXiv fetcher that extracts papers from the ArXiv RSS feed."""
 
     ARXIV_RSS_URL = "https://arxiv.org/rss/"

@@ -6,7 +6,8 @@ from sqlalchemy.orm import sessionmaker
 
 from arxivist import config
 from arxivist.domain.paper import Category, Paper
-from arxivist.infrastructure.arxiv_rss_fetcher import ArXivRSSClient
+from arxivist.infrastructure.arxiv_rss_fetcher import ArXivRSSFetcher
+from arxivist.infrastructure.feedparser_rss_fetcher import FeedparserRSSClient
 from arxivist.infrastructure.orm import Base
 from arxivist.infrastructure.unit_of_work import SqlAlchemyUnitOfWork
 
@@ -15,7 +16,7 @@ Base.metadata.create_all(engine)
 session_factory = sessionmaker(bind=engine)
 
 uow = SqlAlchemyUnitOfWork(session_factory)
-rss_client = ArXivRSSClient()
+rss_client = ArXivRSSFetcher(FeedparserRSSClient())
 
 
 @click.group()

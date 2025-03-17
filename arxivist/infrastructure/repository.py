@@ -33,6 +33,16 @@ class SqlAlchemyPaperRepository(AbstractPaperRepository):
 
         self.session.add(self._to_orm(paper))
 
+    def delete(self, arxiv_id: str) -> None:
+        """Deletes a `Paper` domain object from the repository.
+
+        Args:
+            arxiv_id: The ArXiv ID of the paper to remove.
+        """
+        paper_orm = self.session.query(PaperORM).filter_by(arxiv_id=arxiv_id).first()
+        if paper_orm:
+            self.session.delete(paper_orm)
+
     def get(self, arxiv_id: str) -> Paper | None:
         """Gets a `Paper` domain object from the repository.
 

@@ -16,6 +16,15 @@ class AbstractPaperRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def delete(self, arxiv_id: str) -> None:
+        """Deletes a `Paper` domain object from the repository.
+
+        Args:
+            arxiv_id: The ArXiv ID of the paper to delete.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
     def get(self, arxiv_id: str) -> Paper | None:
         """Gets a `Paper` domain object from the repository.
 

@@ -3,8 +3,8 @@ from abc import ABC, abstractmethod
 from arxivist.domain.paper import Category, Paper
 
 
-class AbstractPaperFetcher(ABC):
-    """Abstract paper fetcher for extracting papers from a source."""
+class AbstractArXivFetcher(ABC):
+    """Abstract ArXiv fetcher for extracting papers."""
 
     @abstractmethod
     def fetch_papers(self, categories: set[Category]) -> list[Paper]:
