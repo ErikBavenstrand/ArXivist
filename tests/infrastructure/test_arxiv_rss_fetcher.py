@@ -62,6 +62,14 @@ class TestArXivRSSClient:
 
         client = ArXivRSSFetcher(mock_rss_fetcher)
 
-        mock_rss_fetcher.parse = lambda feed: {"entries": [{}]}
         with pytest.raises(ValueError):
             client.fetch_papers({Category("cs", "CV")})
+
+    def test_fetch_papers_empty_entries(self) -> None:
+        mock_rss_fetcher = MagicMock(AbstractRSSFetcher)
+        mock_rss_fetcher.parse.return_value = {}
+
+        client = ArXivRSSFetcher(mock_rss_fetcher)
+        papers = client.fetch_papers({Category("cs", "CV")})
+
+        assert papers == []

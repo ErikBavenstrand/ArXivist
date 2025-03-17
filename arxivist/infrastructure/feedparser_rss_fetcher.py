@@ -14,7 +14,14 @@ class FeedparserRSSClient(AbstractRSSFetcher):
         Args:
             feed: The RSS feed to parse, as a URL or file path.
 
+        Raises:
+            ValueError: If the feed is invalid.
+
         Returns:
             A parsed RSS feed as a dictionary
         """
-        return feedparser.parse(feed)
+        result = feedparser.parse(feed)
+        if result.get("bozo") == 1:
+            raise ValueError("Invalid RSS feed")
+
+        return result
