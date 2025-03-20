@@ -23,24 +23,25 @@ class OpenAIEmbeddingModel(AbstractEmbeddingModel):
         self.client = client
         self.model = model
 
-    def embed_string(self, text: str) -> list[float]:
+    def embed_string(self, text: str | list[str]) -> list[float] | list[list[float]]:
         """Embeds a string into a list of floats using the OpenAI model.
 
         Args:
-            text: The string to embed.
+            text: The string or list of strings to embed.
 
         Raises:
             EmbeddingModelError: If there is an error with the embedding request.
 
         Returns:
-            A list of floats representing the embedded string.
+            A list of floats representing the embedded string or a list of lists of floats
+            if multiple strings are provided.
         """
         try:
             response = self.client.embeddings.create(
                 model=self.model,
                 input=text,
             )
-            return response.data[0].embedding
+            return response.data[0].embedding if isinstance(text, str) else [item.embedding for item in response.data]
         except Exception as e:
             error_msg = f"Error embedding string with OpenAI model {self.model!r}."
             raise EmbeddingModelError(error_msg) from e
