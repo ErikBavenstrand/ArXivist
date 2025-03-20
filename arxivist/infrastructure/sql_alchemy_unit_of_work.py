@@ -1,24 +1,17 @@
-from sqlalchemy import create_engine
+from types import TracebackType
+
 from sqlalchemy.orm import Session, sessionmaker
 
-from arxivist import config
 from arxivist.application.ports.unit_of_work import AbstractUnitOfWork
-from arxivist.infrastructure.repository import (
+from arxivist.infrastructure.sql_alchemy_repository import (
     SqlAlchemyPaperRepository,
-)
-
-DEFAULT_SESSION_FACTORY = sessionmaker(
-    bind=create_engine(
-        config.DATABASE_URL,
-        isolation_level="REPEATABLE READ",
-    )
 )
 
 
 class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
     """A `SQLAlchemy` Unit of Work for managing transactions."""
 
-    def __init__(self, session_factory: sessionmaker = DEFAULT_SESSION_FACTORY) -> None:
+    def __init__(self, session_factory: sessionmaker[Session]) -> None:
         """Initializes the `SqlAlchemyUnitOfWork`.
 
         Args:
@@ -36,13 +29,20 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
         self.papers = SqlAlchemyPaperRepository(self.session)
         return self
 
-    def __exit__(self, *args) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         """Exit the Unit of Work context.
 
         Args:
-            args: The arguments passed to the `__exit__` method.
+            exc_type: The exception type.
+            exc_value: The exception instance.
+            traceback: The traceback object.
         """
-        super().__exit__(*args)
+        super().__exit__(exc_type, exc_value, traceback)
         self.session.close()
 
     def commit(self) -> None:

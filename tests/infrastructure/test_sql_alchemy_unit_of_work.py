@@ -3,9 +3,9 @@ import datetime
 import pytest
 from sqlalchemy.orm import Session, sessionmaker
 
-from arxivist.domain.paper import Category, Paper
-from arxivist.infrastructure.repository import SqlAlchemyPaperRepository
-from arxivist.infrastructure.unit_of_work import SqlAlchemyUnitOfWork
+from arxivist.domain.model import Category, Paper
+from arxivist.infrastructure.sql_alchemy_repository import SqlAlchemyPaperRepository
+from arxivist.infrastructure.sql_alchemy_unit_of_work import SqlAlchemyUnitOfWork
 
 
 @pytest.fixture
@@ -78,9 +78,7 @@ class TestSqlAlchemyUnitOfWork:
             uow.papers.delete(sample_paper.arxiv_id)
             uow.commit()
 
-    def test_uow_session_lifecycle(
-        self, in_memory_sqlite_session_factory: sessionmaker[Session]
-    ) -> None:
+    def test_uow_session_lifecycle(self, in_memory_sqlite_session_factory: sessionmaker[Session]) -> None:
         uow = SqlAlchemyUnitOfWork(in_memory_sqlite_session_factory)
         assert not hasattr(uow, "session")
 

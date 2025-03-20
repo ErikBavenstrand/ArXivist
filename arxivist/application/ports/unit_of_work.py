@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from types import TracebackType
 
 from arxivist.application.ports.repository import AbstractPaperRepository
 
@@ -17,11 +18,18 @@ class AbstractUnitOfWork(ABC):
         """
         return self
 
-    def __exit__(self, *args) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
         """Exit the Unit of Work context.
 
         Args:
-            args: The arguments passed to the `__exit__` method.
+            exc_type: The exception type.
+            exc_value: The exception instance.
+            traceback: The traceback object.
         """
         self.rollback()
 

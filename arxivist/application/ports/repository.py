@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
 
-from arxivist.domain.paper import Paper
+from arxivist.domain import model
 
 
 class AbstractPaperRepository(ABC):
     """Abstract `Paper` domain object repository."""
 
     @abstractmethod
-    def add(self, paper: Paper) -> None:
+    def add(self, paper: model.Paper) -> None:
         """Adds a `Paper` domain object to the repository.
 
         Args:
@@ -25,7 +25,7 @@ class AbstractPaperRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get(self, arxiv_id: str) -> Paper | None:
+    def get(self, arxiv_id: str) -> model.Paper | None:
         """Gets a `Paper` domain object from the repository.
 
         Args:
@@ -37,7 +37,7 @@ class AbstractPaperRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def list(self, limit: int | None) -> list[Paper]:
+    def list(self, limit: int | None) -> list[model.Paper]:
         """Lists `Paper` domain objects from the repository.
 
         Args:

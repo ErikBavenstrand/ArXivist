@@ -1,10 +1,10 @@
-from typing import Generator
+from collections.abc import Generator
 
 import pytest
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from arxivist.infrastructure.orm import Base
+from arxivist.infrastructure.sql_alchemy_orm import Base
 
 
 @pytest.fixture(scope="module")
@@ -16,8 +16,8 @@ def in_memory_db() -> Engine:
 
 @pytest.fixture(scope="module")
 def in_memory_sqlite_session(in_memory_db: Engine) -> Generator[Session, None, None]:
-    SessionFactory = sessionmaker(bind=in_memory_db)
-    session = SessionFactory()
+    session_factory = sessionmaker(bind=in_memory_db)
+    session = session_factory()
 
     try:
         yield session

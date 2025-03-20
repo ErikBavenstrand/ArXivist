@@ -1,6 +1,5 @@
 import datetime
 from dataclasses import dataclass
-from typing import Any
 
 
 class Paper:
@@ -89,7 +88,7 @@ class Category:
         """
         return Category(*category.split(".")[:2])
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Compare the `Category` domain object with another object.
 
         Args:

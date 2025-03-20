@@ -44,7 +44,9 @@ class CategoryORM(Base):
     __tablename__ = "category"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     paper_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("paper.id", ondelete="CASCADE"), nullable=False
+        Integer,
+        ForeignKey("paper.id", ondelete="CASCADE"),
+        nullable=False,
     )
     major: Mapped[str] = mapped_column(String, nullable=False)
     minor: Mapped[str] = mapped_column(String, nullable=True)
@@ -53,6 +55,9 @@ class CategoryORM(Base):
 
     __table_args__ = (
         UniqueConstraint(
-            "paper_id", "major", "minor", name="uq_category_paper_id_major_minor"
+            "paper_id",
+            "major",
+            "minor",
+            name="uq_category_paper_id_major_minor",
         ),
     )

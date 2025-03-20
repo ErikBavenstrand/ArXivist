@@ -1,5 +1,6 @@
 import pytest
 
+from arxivist.infrastructure.exceptions import RSSParsingError
 from arxivist.infrastructure.feedparser_rss_fetcher import FeedparserRSSClient
 
 
@@ -17,7 +18,7 @@ class TestFeedparserRSSClient:
                         "base": "",
                         "value": "Sample Item",
                     },
-                }
+                },
             ],
             "feed": {
                 "title": "Sample Feed",
@@ -42,7 +43,7 @@ class TestFeedparserRSSClient:
         rss_feed = "<rss><channel><title>Sample Feed</title></channel><item><title>Sample Item</title></item>"
         client = FeedparserRSSClient()
 
-        with pytest.raises(ValueError):
+        with pytest.raises(RSSParsingError, match="Failed to parse RSS feed"):
             client.parse(rss_feed)
 
     def test_parse_empty_feed(self) -> None:

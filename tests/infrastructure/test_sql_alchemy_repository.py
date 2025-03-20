@@ -3,8 +3,8 @@ import datetime
 import pytest
 from sqlalchemy.orm import Session
 
-from arxivist.domain.paper import Category, Paper
-from arxivist.infrastructure.repository import SqlAlchemyPaperRepository
+from arxivist.domain.model import Category, Paper
+from arxivist.infrastructure.sql_alchemy_repository import SqlAlchemyPaperRepository
 
 
 @pytest.fixture
@@ -19,9 +19,7 @@ def sample_paper() -> Paper:
 
 
 class TestSqlAlchemyPaperRepository:
-    def test_add_and_get_paper(
-        self, in_memory_sqlite_session: Session, sample_paper: Paper
-    ) -> None:
+    def test_add_and_get_paper(self, in_memory_sqlite_session: Session, sample_paper: Paper) -> None:
         repo = SqlAlchemyPaperRepository(in_memory_sqlite_session)
 
         repo.add(sample_paper)
@@ -38,9 +36,7 @@ class TestSqlAlchemyPaperRepository:
         all_papers = repo.list()
         assert len(all_papers) == 0
 
-    def test_prevent_duplicate_add_paper(
-        self, in_memory_sqlite_session: Session, sample_paper: Paper
-    ) -> None:
+    def test_prevent_duplicate_add_paper(self, in_memory_sqlite_session: Session, sample_paper: Paper) -> None:
         repo = SqlAlchemyPaperRepository(in_memory_sqlite_session)
 
         repo.add(sample_paper)
@@ -54,9 +50,7 @@ class TestSqlAlchemyPaperRepository:
         papers = repo.list()
         assert len(papers) == 0
 
-    def test_delete_paper(
-        self, in_memory_sqlite_session: Session, sample_paper: Paper
-    ) -> None:
+    def test_delete_paper(self, in_memory_sqlite_session: Session, sample_paper: Paper) -> None:
         repo = SqlAlchemyPaperRepository(in_memory_sqlite_session)
 
         repo.add(sample_paper)

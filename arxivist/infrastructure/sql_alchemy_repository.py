@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from arxivist.application.ports.repository import (
     AbstractPaperRepository,
 )
-from arxivist.domain.paper import Category, Paper
-from arxivist.infrastructure.orm import (
+from arxivist.domain import model
+from arxivist.infrastructure.sql_alchemy_orm import (
     CategoryORM,
     PaperORM,
 )
@@ -21,7 +21,7 @@ class SqlAlchemyPaperRepository(AbstractPaperRepository):
         """
         self.session = session
 
-    def add(self, paper: Paper) -> None:
+    def add(self, paper: model.Paper) -> None:
         """Adds a `Paper` domain object to the repository.
 
         Args:
@@ -43,7 +43,7 @@ class SqlAlchemyPaperRepository(AbstractPaperRepository):
         if paper_orm:
             self.session.delete(paper_orm)
 
-    def get(self, arxiv_id: str) -> Paper | None:
+    def get(self, arxiv_id: str) -> model.Paper | None:
         """Gets a `Paper` domain object from the repository.
 
         Args:
@@ -55,7 +55,7 @@ class SqlAlchemyPaperRepository(AbstractPaperRepository):
         paper_orm = self.session.query(PaperORM).filter_by(arxiv_id=arxiv_id).first()
         return self._to_paper(paper_orm) if paper_orm else None
 
-    def list(self, limit: int | None = 50) -> list[Paper]:
+    def list(self, limit: int | None = 50) -> list[model.Paper]:
         """Lists `Paper` domain objects from the repository.
 
         Args:
@@ -64,16 +64,11 @@ class SqlAlchemyPaperRepository(AbstractPaperRepository):
         Returns:
             A list of `Paper` domain objects.
         """
-        orm_papers = (
-            self.session.query(PaperORM)
-            .order_by(PaperORM.published_at.desc())
-            .limit(limit)
-            .all()
-        )
+        orm_papers = self.session.query(PaperORM).order_by(PaperORM.published_at.desc()).limit(limit).all()
         return [self._to_paper(orm_paper) for orm_paper in orm_papers]
 
     @staticmethod
-    def _to_orm(paper: Paper) -> PaperORM:
+    def _to_orm(paper: model.Paper) -> PaperORM:
         """Converts a `Paper` domain object to a `PaperORM` ORM object.
 
         Args:
@@ -87,14 +82,11 @@ class SqlAlchemyPaperRepository(AbstractPaperRepository):
             title=paper.title,
             abstract=paper.abstract,
             published_at=paper.published_at,
-            categories={
-                CategoryORM(major=category.major, minor=category.minor)
-                for category in paper.categories
-            },
+            categories={CategoryORM(major=category.major, minor=category.minor) for category in paper.categories},
         )
 
     @staticmethod
-    def _to_paper(paper_orm: PaperORM) -> Paper:
+    def _to_paper(paper_orm: PaperORM) -> model.Paper:
         """Converts a `PaperORM` ORM object to a `Paper` domain object.
 
         Args:
@@ -103,13 +95,12 @@ class SqlAlchemyPaperRepository(AbstractPaperRepository):
         Returns:
             The converted `Paper` domain object.
         """
-        return Paper(
+        return model.Paper(
             arxiv_id=paper_orm.arxiv_id,
             title=paper_orm.title,
             abstract=paper_orm.abstract,
             published_at=paper_orm.published_at,
             categories={
-                Category(major=category.major, minor=category.minor)
-                for category in paper_orm.categories
+                model.Category(major=category.major, minor=category.minor) for category in paper_orm.categories
             },
         )
