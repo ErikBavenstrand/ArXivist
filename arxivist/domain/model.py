@@ -39,6 +39,15 @@ class Paper:
         return f"Paper(arxiv_id={self.arxiv_id!r}, title={self.title!r}, published_at={self.published_at!r}, ...)"
 
     @property
+    def published_at_int(self) -> int:
+        """Return the published date as an integer.
+
+        Returns:
+            The published date as an integer in YYYYMMDD format.
+        """
+        return int(self.published_at.strftime("%Y%m%d"))
+
+    @property
     def summary_url(self) -> str:
         """Return the URL to the summary of the paper.
 

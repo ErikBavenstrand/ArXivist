@@ -9,8 +9,7 @@ from arxivist.infrastructure.exceptions import RSSParsingError
 class FeedparserRSSClient(AbstractRSSFetcher):
     """An RSS client that uses the `feedparser` library to read and parse RSS feeds."""
 
-    @staticmethod
-    def parse(feed: str) -> dict[str, Any]:
+    def parse(self, feed: str) -> dict[str, Any]:
         """Reads and parses the given RSS feed using the `feedparser` library.
 
         Args:

@@ -1,6 +1,5 @@
 import datetime
 import time
-from unittest.mock import MagicMock
 
 import pytest
 
@@ -11,10 +10,17 @@ from arxivist.infrastructure.arxiv_rss_fetcher import ArXivRSSPaperExtractor
 from arxivist.infrastructure.exceptions import ArXivRSSMissingFieldError
 
 
+class FakeRSSFetcher(AbstractRSSFetcher):
+    def __init__(self, parse_result: dict) -> None:
+        self.parse_result = parse_result
+
+    def parse(self, feed: str) -> dict:
+        return self.parse_result
+
+
 class TestArXivRSSPaperExtractor:
     def test_fetch_papers_success(self) -> None:
-        mock_rss_fetcher = MagicMock(AbstractRSSFetcher)
-        mock_rss_fetcher.parse.return_value = {
+        fake_rss_fetcher = FakeRSSFetcher({
             "entries": [
                 {
                     "id": "2025.12345",
@@ -31,9 +37,8 @@ class TestArXivRSSPaperExtractor:
                     "tags": [{"term": "cs.NLP"}],
                 },
             ],
-        }
-
-        client = ArXivRSSPaperExtractor(mock_rss_fetcher)
+        })
+        client = ArXivRSSPaperExtractor(fake_rss_fetcher)
 
         papers = client.fetch_recent_papers({model.Category("cs", "CV")})
 
@@ -54,19 +59,17 @@ class TestArXivRSSPaperExtractor:
         assert paper_2.categories == {model.Category("cs", "NLP")}
 
     def test_fetch_papers_missing_fields(self) -> None:
-        mock_rss_fetcher = MagicMock(AbstractRSSFetcher)
-        mock_rss_fetcher.parse.return_value = {"entries": [{}]}
+        fake_rss_fetcher = FakeRSSFetcher({"entries": [{}]})
 
-        client = ArXivRSSPaperExtractor(mock_rss_fetcher)
+        client = ArXivRSSPaperExtractor(fake_rss_fetcher)
 
         with pytest.raises(ArXivRSSMissingFieldError, match="Missing required field 'id' in the RSS feed entry"):
             client.fetch_recent_papers({model.Category("cs", "CV")})
 
     def test_fetch_papers_empty_entries(self) -> None:
-        mock_rss_fetcher = MagicMock(AbstractRSSFetcher)
-        mock_rss_fetcher.parse.return_value = {}
+        fake_rss_fetcher = FakeRSSFetcher({})
 
-        client = ArXivRSSPaperExtractor(mock_rss_fetcher)
+        client = ArXivRSSPaperExtractor(fake_rss_fetcher)
         papers = client.fetch_recent_papers({model.Category("cs", "CV")})
 
         assert papers == []

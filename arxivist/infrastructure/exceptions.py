@@ -16,3 +16,11 @@ class ArXivRSSMissingFieldError(Exception):
 
 class EmbeddingModelError(Exception):
     """Exception raised when there is an error with the embedding model."""
+
+
+class VectoryRepositoryInsertionError(Exception):
+    """Exception raised when there is an error inserting embeddings into the vector repository."""
+
+
+class VectoryRepositoryQueryError(Exception):
+    """Exception raised when there is an error querying the vector repository."""

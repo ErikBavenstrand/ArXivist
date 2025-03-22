@@ -8,4 +8,5 @@ __pycache__/
 
 # Custom
 .env
-arxiv.db
+*.db
+*.db.lock

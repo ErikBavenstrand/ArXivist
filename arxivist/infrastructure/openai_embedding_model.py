@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, overload
 
 import openai
 
@@ -23,6 +23,21 @@ class OpenAIEmbeddingModel(AbstractEmbeddingModel):
         self.client = client
         self.model = model
 
+    @property
+    def dimensions(self) -> int:
+        """Get the dimensions of the embedding model.
+
+        Returns:
+            The number of dimensions for the embedding model.
+        """
+        return len(self.embed_string(""))
+
+    @overload
+    def embed_string(self, text: str) -> list[float]: ...
+
+    @overload
+    def embed_string(self, text: list[str]) -> list[list[float]]: ...
+
     def embed_string(self, text: str | list[str]) -> list[float] | list[list[float]]:
         """Embeds a string into a list of floats using the OpenAI model.
 
@@ -41,7 +56,7 @@ class OpenAIEmbeddingModel(AbstractEmbeddingModel):
                 model=self.model,
                 input=text,
             )
-            return response.data[0].embedding if isinstance(text, str) else [item.embedding for item in response.data]
+            return [item.embedding for item in response.data] if isinstance(text, list) else response.data[0].embedding
         except Exception as e:
             error_msg = f"Error embedding string with OpenAI model {self.model!r}."
             raise EmbeddingModelError(error_msg) from e

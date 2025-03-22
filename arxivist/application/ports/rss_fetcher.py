@@ -5,9 +5,8 @@ from typing import Any
 class AbstractRSSFetcher(ABC):
     """Abstract RSS fetcher for reading and parsing RSS feeds."""
 
-    @staticmethod
     @abstractmethod
-    def parse(feed: str) -> dict[str, Any]:
+    def parse(self, feed: str) -> dict[str, Any]:
         """Parses the given RSS feed and returns a dictionary of feed data.
 
         Args:

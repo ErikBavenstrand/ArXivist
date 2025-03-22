@@ -6,15 +6,17 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "click>=8.1.8",
-    "faiss-cpu>=1.10.0",
     "feedparser>=6.0.11",
     "openai>=1.66.3",
+    "pymilvus>=2.5.5",
     "python-dotenv>=1.0.1",
     "sqlalchemy>=2.0.39",
 ]
 
 [dependency-groups]
 dev = [
+    "ipykernel>=6.29.5",
+    "ipywidgets>=8.1.5",
     "pytest>=8.3.5",
     "ruff>=0.11.0",
 ]
@@ -28,13 +30,34 @@ preview = true
 [tool.ruff.lint]
 extend-select = ["ALL"]
 ignore = [
+    "ANN401",
+    "CPY",
     "D100",
     "D104",
-    "CPY",
+    "PLR6301",
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101", "D101", "D103", "D102", "PLR6301", "PLR2004"]
+"tests/*" = [
+    "A002",
+    "ANN002",
+    "ANN003",
+    "ARG002",
+    "ARG004",
+    "D101",
+    "D102",
+    "D103",
+    "D106",
+    "D107",
+    "EM101",
+    "PLR0913",
+    "PLR2004",
+    "PLR6301",
+    "S101",
+    "TRY002",
+    "TRY003",
+    "EM102",
+]
 
 [tool.ruff.format]
 preview = true
@@ -42,3 +65,10 @@ docstring-code-format = true
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.isort]
+profile = "black"
+lines_after_imports = 1
+line_length = 120
+use_parentheses = true
+include_trailing_comma = true

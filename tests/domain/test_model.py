@@ -72,6 +72,17 @@ class TestPaper:
         assert paper.pdf_url == f"https://arxiv.org/pdf/{arxiv_id}"
         assert paper.html_url == f"https://arxiv.org/html/{arxiv_id}"
 
+    def test_published_at_int(self) -> None:
+        arxiv_id = "2101.00001v1"
+        published_at = date(2025, 1, 1)
+        paper = model.Paper(
+            arxiv_id=arxiv_id,
+            title="Sample Paper",
+            abstract="This is a sample abstract.",
+            published_at=published_at,
+        )
+        assert paper.published_at_int == 20250101
+
 
 class TestCategory:
     def test_init(self) -> None:
