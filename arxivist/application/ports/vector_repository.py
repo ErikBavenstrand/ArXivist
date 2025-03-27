@@ -2,14 +2,14 @@ import datetime
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from arxivist.domain.model import Category, Paper
+from arxivist.domain import model
 
 
 @dataclass
 class VectorSearchFilter:
     """Technology-agnostic filter for vector search."""
 
-    categories: list[Category] | None = None
+    categories: list[model.Category] | None = None
     """List of categories to filter the search results by (AND operation)."""
 
     published_after: datetime.date | None = None
@@ -23,7 +23,7 @@ class AbstractVectorRepository(ABC):
     """Abstract base class for a vector repository."""
 
     @abstractmethod
-    def insert_embeddings(self, embeddings: list[list[float]], papers: list[Paper]) -> None:
+    def insert_embeddings(self, embeddings: list[list[float]], papers: list[model.Paper]) -> None:
         """Insert embeddings and metadata into the vector repository.
 
         Args:

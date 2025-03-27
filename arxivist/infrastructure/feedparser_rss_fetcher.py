@@ -2,11 +2,11 @@ from typing import Any
 
 import feedparser
 
-from arxivist.application.ports.rss_fetcher import AbstractRSSFetcher
+from arxivist.application.ports.rss_client import AbstractRSSClient
 from arxivist.infrastructure.exceptions import RSSParsingError
 
 
-class FeedparserRSSClient(AbstractRSSFetcher):
+class FeedparserRSSClient(AbstractRSSClient):
     """An RSS client that uses the `feedparser` library to read and parse RSS feeds."""
 
     def parse(self, feed: str) -> dict[str, Any]:

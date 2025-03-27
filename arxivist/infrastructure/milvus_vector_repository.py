@@ -36,7 +36,7 @@ class MilvusVectorSearchFilterTransformer:
             milvus_filter.append(
                 " && ".join(
                     f'ARRAY_CONTAINS({self.categories_field_name}, "{category}")'
-                    for category in [str(category) for category in filters.categories]
+                    for category in [category.identifier for category in filters.categories]
                 ),
             )
         if filters.published_after:
@@ -144,7 +144,7 @@ class MilvusVectorRepository(AbstractVectorRepository):
             {
                 self.ARXIV_ID_FIELD_NAME: paper.arxiv_id,
                 self.EMBEDDING_FIELD_NAME: embedding,
-                self.CATEGORIES_FIELD_NAME: [str(category) for category in paper.categories],
+                self.CATEGORIES_FIELD_NAME: [category.identifier for category in paper.categories],
                 self.PUBLISHED_AT_FIELD_NAME: paper.published_at_int,
             }
             for embedding, paper in zip(embeddings, papers, strict=True)

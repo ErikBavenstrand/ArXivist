@@ -15,7 +15,7 @@ def sample_paper() -> Paper:
         title="Sample Paper",
         abstract="This is a sample abstract.",
         published_at=datetime.date(2025, 1, 1),
-        categories={Category("cs", "CV"), Category("cs", "CL")},
+        categories=[Category("cs", "CV"), Category("cs", "CL")],
     )
 
 
@@ -27,20 +27,20 @@ class TestSqlAlchemyUnitOfWork:
     ) -> None:
         uow = SqlAlchemyUnitOfWork(in_memory_sqlite_session_factory)
         with uow:
-            uow.papers.add(sample_paper)
+            uow.papers.upsert_paper(sample_paper)
             uow.commit()
 
         with uow:
-            retrieved_paper = uow.papers.get(sample_paper.arxiv_id)
+            retrieved_paper = uow.papers.get_paper(sample_paper.arxiv_id)
             assert retrieved_paper is not None
             assert retrieved_paper.arxiv_id == sample_paper.arxiv_id
             assert retrieved_paper.title == sample_paper.title
             assert retrieved_paper.abstract == sample_paper.abstract
             assert retrieved_paper.published_at == sample_paper.published_at
-            assert retrieved_paper.categories == sample_paper.categories
+            assert set(retrieved_paper.categories) == set(sample_paper.categories)
 
         with uow:
-            uow.papers.delete(sample_paper.arxiv_id)
+            uow.papers.delete_paper(sample_paper.arxiv_id)
             uow.commit()
 
     def test_implicit_rollback(
@@ -50,15 +50,11 @@ class TestSqlAlchemyUnitOfWork:
     ) -> None:
         uow = SqlAlchemyUnitOfWork(in_memory_sqlite_session_factory)
         with uow:
-            uow.papers.add(sample_paper)
+            uow.papers.upsert_paper(sample_paper)
 
         with uow:
-            retrieved_paper = uow.papers.get(sample_paper.arxiv_id)
+            retrieved_paper = uow.papers.get_paper(sample_paper.arxiv_id)
             assert retrieved_paper is None
-
-        with uow:
-            uow.papers.delete(sample_paper.arxiv_id)
-            uow.commit()
 
     def test_explicit_rollback(
         self,
@@ -67,16 +63,12 @@ class TestSqlAlchemyUnitOfWork:
     ) -> None:
         uow = SqlAlchemyUnitOfWork(in_memory_sqlite_session_factory)
         with uow:
-            uow.papers.add(sample_paper)
+            uow.papers.upsert_paper(sample_paper)
             uow.rollback()
 
         with uow:
-            retrieved_paper = uow.papers.get(sample_paper.arxiv_id)
+            retrieved_paper = uow.papers.get_paper(sample_paper.arxiv_id)
             assert retrieved_paper is None
-
-        with uow:
-            uow.papers.delete(sample_paper.arxiv_id)
-            uow.commit()
 
     def test_uow_session_lifecycle(self, in_memory_sqlite_session_factory: sessionmaker[Session]) -> None:
         uow = SqlAlchemyUnitOfWork(in_memory_sqlite_session_factory)

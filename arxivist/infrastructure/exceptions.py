@@ -24,3 +24,32 @@ class VectoryRepositoryInsertionError(Exception):
 
 class VectoryRepositoryQueryError(Exception):
     """Exception raised when there is an error querying the vector repository."""
+
+
+class RepositoryError(Exception):
+    """Exception raised when there is an error with the SQLAlchemy repository."""
+
+
+class CategoryNotFoundError(RepositoryError):
+    """Exception raised when a category is not found in the repository."""
+
+    def __init__(self, archive: str, subcategory: str | None) -> None:
+        """Initializes the `CategoryNotFoundError` exception.
+
+        Args:
+            archive: The archive name.
+            subcategory: The subcategory name.
+        """
+        super().__init__(f"Category with archive {archive!r} and subcategory {subcategory!r} not found.")
+
+
+class PaperNotFoundError(RepositoryError):
+    """Exception raised when a paper is not found in the repository."""
+
+    def __init__(self, arxiv_id: str) -> None:
+        """Initializes the `PaperNotFoundError` exception.
+
+        Args:
+            arxiv_id: The ArXiv ID of the paper.
+        """
+        super().__init__(f"Paper with ArXiv ID {arxiv_id!r} not found.")

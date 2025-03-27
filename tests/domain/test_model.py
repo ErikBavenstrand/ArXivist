@@ -9,7 +9,7 @@ class TestPaper:
         title = "Sample Paper"
         abstract = "This is a sample abstract."
         published_at = date(2025, 1, 1)
-        categories = {model.Category("cs", "CV")}
+        categories = [model.Category("cs", "CV")]
         paper = model.Paper(
             arxiv_id=arxiv_id,
             title=title,
@@ -28,7 +28,7 @@ class TestPaper:
         title = "Sample Paper"
         abstract = "This is a sample abstract."
         published_at = date(2025, 1, 1)
-        categories = {model.Category("cs", "CV"), model.Category("cs", "CL")}
+        categories = [model.Category("cs", "CV"), model.Category("cs", "CL")]
         paper = model.Paper(
             arxiv_id=arxiv_id,
             title=title,
@@ -57,7 +57,7 @@ class TestPaper:
         assert paper.title == title
         assert paper.abstract == abstract
         assert paper.published_at == published_at
-        assert paper.categories == set()
+        assert paper.categories == []
 
     def test_url_properties(self) -> None:
         arxiv_id = "2101.00001v1"
@@ -87,23 +87,23 @@ class TestPaper:
 class TestCategory:
     def test_init(self) -> None:
         category = model.Category("cs", "CV")
-        assert category.major == "cs"
-        assert category.minor == "CV"
+        assert category.archive == "cs"
+        assert category.subcategory == "CV"
 
-    def test_init_no_minor(self) -> None:
-        category = model.Category("cs")
-        assert category.major == "cs"
-        assert category.minor is None
+    def test_init_no_subcategory(self) -> None:
+        category = model.Category("cs", None)
+        assert category.archive == "cs"
+        assert category.subcategory is None
 
     def test_str_init(self) -> None:
         category = model.Category.from_string("cs.CV")
-        assert category.major == "cs"
-        assert category.minor == "CV"
+        assert category.archive == "cs"
+        assert category.subcategory == "CV"
 
-    def test_str_init_no_minor(self) -> None:
+    def test_str_init_no_subcategory(self) -> None:
         category = model.Category.from_string("cs")
-        assert category.major == "cs"
-        assert category.minor is None
+        assert category.archive == "cs"
+        assert category.subcategory is None
 
     def test_category_equality(self) -> None:
         category1 = model.Category("cs", "CV")
@@ -115,10 +115,10 @@ class TestCategory:
         category2 = model.Category("cs", "CV")
         assert hash(category1) == hash(category2)
 
-    def test_category_repr(self) -> None:
+    def test_category_identifier(self) -> None:
         category = model.Category("cs", "CV")
-        assert repr(category) == "Category(major='cs', minor='CV')"
+        assert category.identifier == "cs.CV"
 
-    def test_category_str(self) -> None:
-        category = model.Category("cs", "CV")
-        assert str(category) == "cs.CV"
+    def test_category_identifier_no_subcategory(self) -> None:
+        category = model.Category("cs", None)
+        assert category.identifier == "cs"

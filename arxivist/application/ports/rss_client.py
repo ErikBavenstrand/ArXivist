@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 
-class AbstractRSSFetcher(ABC):
-    """Abstract RSS fetcher for reading and parsing RSS feeds."""
+class AbstractRSSClient(ABC):
+    """Abstract RSS client for reading and parsing RSS feeds."""
 
     @abstractmethod
     def parse(self, feed: str) -> dict[str, Any]:

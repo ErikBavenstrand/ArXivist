@@ -2,8 +2,8 @@ import datetime
 import time
 from typing import Any
 
-from arxivist.application.ports.arxiv_paper_extractor import AbstractArXivPaperExtractor
-from arxivist.application.ports.rss_fetcher import AbstractRSSFetcher
+from arxivist.application.ports.arxiv_paper_extractor import AbstractArXivPaperExtractor, PaperDTO
+from arxivist.application.ports.rss_client import AbstractRSSClient
 from arxivist.domain import model
 from arxivist.infrastructure.exceptions import ArXivRSSMissingFieldError
 
@@ -11,28 +11,28 @@ from arxivist.infrastructure.exceptions import ArXivRSSMissingFieldError
 class ArXivRSSPaperExtractor(AbstractArXivPaperExtractor):
     """An ArXiv fetcher that extracts papers from the ArXiv RSS feed."""
 
-    def __init__(self, rss_fetcher: AbstractRSSFetcher, rss_url: str = "https://arxiv.org/rss/") -> None:
+    def __init__(self, rss_client: AbstractRSSClient, rss_url: str = "https://arxiv.org/rss/") -> None:
         """Initializes the `ArXivRSSClient` with the given RSS client.
 
         Args:
-            rss_fetcher: The RSS fetcher to use for fetching the ArXiv RSS feed.
+            rss_client: The RSS client to use for fetching the ArXiv RSS feed.
             rss_url: The base URL for the ArXiv RSS feed.
         """
-        self.rss_fetcher = rss_fetcher
+        self.rss_client = rss_client
         self.rss_url = rss_url
 
-    def fetch_recent_papers(self, categories: set[model.Category]) -> list[model.Paper]:
+    def fetch_recent_papers(self, categories: list[model.Category]) -> list[PaperDTO]:
         """Fetch the latest papers from the ArXiv RSS feed for the given categories.
 
         Args:
             categories: The `Category` domain objects to filter the papers by.
 
         Returns:
-            A list of `Paper` domain objects.
+            A list of `PaperDTO` objects representing the papers.
         """
-        papers: list[model.Paper] = []
-        arxiv_rss_url = f"{self.rss_url}{'+'.join(map(str, categories))}"
-        entries: list[dict[str, Any]] = self.rss_fetcher.parse(arxiv_rss_url).get("entries", [])
+        papers: list[PaperDTO] = []
+        arxiv_rss_url = f"{self.rss_url}{'+'.join(category.identifier for category in categories)}"
+        entries: list[dict[str, Any]] = self.rss_client.parse(arxiv_rss_url).get("entries", [])
 
         for entry in entries:
             arxiv_id = self._extract_arxiv_id(entry)
@@ -41,14 +41,15 @@ class ArXivRSSPaperExtractor(AbstractArXivPaperExtractor):
             published_at = self._extract_published_date(entry)
             paper_categories = self._extract_categories(entry)
 
-            paper = model.Paper(
-                arxiv_id=arxiv_id,
-                title=title,
-                abstract=abstract,
-                published_at=published_at,
-                categories=paper_categories,
+            papers.append(
+                PaperDTO(
+                    arxiv_id=arxiv_id,
+                    title=title,
+                    abstract=abstract,
+                    published_at=published_at,
+                    categories=paper_categories,
+                ),
             )
-            papers.append(paper)
 
         return papers
 
@@ -129,7 +130,7 @@ class ArXivRSSPaperExtractor(AbstractArXivPaperExtractor):
         return datetime.datetime.fromtimestamp(time.mktime(published_parsed), tz=datetime.UTC).date()
 
     @staticmethod
-    def _extract_categories(entry: dict[str, Any]) -> set[model.Category]:
+    def _extract_categories(entry: dict[str, Any]) -> list[str]:
         """Extracts the categories from an RSS feed entry.
 
         Args:
@@ -138,5 +139,4 @@ class ArXivRSSPaperExtractor(AbstractArXivPaperExtractor):
         Returns:
             A set of `Category` domain objects.
         """
-        tags: list[str] = [tag["term"] for tag in entry.get("tags", []) if "term" in tag]
-        return {model.Category.from_string(tag) for tag in tags}
+        return [tag["term"] for tag in entry.get("tags", []) if "term" in tag]

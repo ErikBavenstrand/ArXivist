@@ -1,34 +1,25 @@
 import datetime
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
+@dataclass
 class Paper:
     """Domain object for an ArXiv paper."""
 
-    BASE_URL = "https://arxiv.org"
+    arxiv_id: str
+    """The ArXiv ID of the paper."""
 
-    def __init__(
-        self,
-        arxiv_id: str,
-        title: str,
-        abstract: str,
-        published_at: datetime.date,
-        categories: set["Category"] | None = None,
-    ) -> None:
-        """Initializes the `Paper` domain object.
+    title: str
+    """The title of the paper."""
 
-        Args:
-            arxiv_id: The ArXiv ID of the paper.
-            title: The title of the paper.
-            abstract: The abstract of the paper.
-            published_at: The date the paper was published.
-            categories: The categories the paper belongs to.
-        """
-        self.arxiv_id: str = arxiv_id
-        self.title: str = title
-        self.abstract: str = abstract
-        self.published_at: datetime.date = published_at
-        self.categories: set[Category] = categories or set()
+    abstract: str
+    """The abstract of the paper."""
+
+    published_at: datetime.date
+    """The date the paper was published."""
+
+    categories: list["Category"] = field(default_factory=list)
+    """The categories the paper belongs to."""
 
     def __repr__(self) -> str:
         """Return the string representation of the `Paper` domain object.
@@ -36,7 +27,10 @@ class Paper:
         Returns:
             The string representation of the `Paper` domain object.
         """
-        return f"Paper(arxiv_id={self.arxiv_id!r}, title={self.title!r}, published_at={self.published_at!r}, ...)"
+        return (
+            f"Paper(arxiv_id={self.arxiv_id!r}, title={self.title!r}, "
+            f"published_at={self.published_at!r}, categories={self.categories!r}, ...)"
+        )
 
     @property
     def published_at_int(self) -> int:
@@ -54,7 +48,7 @@ class Paper:
         Returns:
             The URL to the summary of the paper.
         """
-        return f"{self.BASE_URL}/abs/{self.arxiv_id}"
+        return f"https://arxiv.org/abs/{self.arxiv_id}"
 
     @property
     def pdf_url(self) -> str:
@@ -63,7 +57,7 @@ class Paper:
         Returns:
             The URL to the PDF of the paper.
         """
-        return f"{self.BASE_URL}/pdf/{self.arxiv_id}"
+        return f"https://arxiv.org/pdf/{self.arxiv_id}"
 
     @property
     def html_url(self) -> str:
@@ -72,30 +66,44 @@ class Paper:
         Returns:
             The URL to the HTML version of the paper.
         """
-        return f"{self.BASE_URL}/html/{self.arxiv_id}"
+        return f"https://arxiv.org/html/{self.arxiv_id}"
 
 
 @dataclass(frozen=True)
 class Category:
     """Domain object for an ArXiv category."""
 
-    major: str
-    """The major category (e.g., "cs")."""
+    archive: str
+    """The archive to which the category belongs (e.g., "astro-ph")."""
 
-    minor: str | None = None
-    """The minor category (e.g., "CV")."""
+    subcategory: str | None
+    """The subcategory of the category (e.g., "SR" for "astro-ph.SR")."""
 
-    @staticmethod
-    def from_string(category: str) -> "Category":
-        """Create a `Category` domain object from a string.
+    archive_name: str | None = None
+    """The name of the category archive (e.g., "Astrophysics")."""
 
-        Args:
-            category: The string representation of the category.
+    category_name: str | None = None
+    """The name of the category (e.g., "Solar and Stellar Astrophysics")."""
+
+    description: str | None = None
+    """The description of the category."""
+
+    @property
+    def identifier(self) -> str:
+        """The identifier of the category in the format "archive.subcategory"."""
+        return f"{self.archive}.{self.subcategory}" if self.subcategory else self.archive
+
+    def __repr__(self) -> str:
+        """Return the string representation of the `Category` domain object.
 
         Returns:
-            The `Category` domain object.
+            The string representation of the `Category` domain object.
         """
-        return Category(*category.split(".")[:2])
+        return (
+            f"Category(archive={self.archive!r}, subcategory={self.subcategory!r}, "
+            f"archive_name={self.archive_name!r}, category_name={self.category_name!r}, "
+            f"description={self.description!r})"
+        )
 
     def __eq__(self, other: object) -> bool:
         """Compare the `Category` domain object with another object.
@@ -108,7 +116,8 @@ class Category:
         """
         if not isinstance(other, Category):
             return False
-        return self.major == other.major and self.minor == other.minor
+
+        return self.archive == other.archive and self.subcategory == other.subcategory
 
     def __hash__(self) -> int:
         """Hash the `Category` domain object.
@@ -116,20 +125,29 @@ class Category:
         Returns:
             The hash of the `Category` domain object.
         """
-        return hash((self.major, self.minor))
+        return hash((self.archive, self.subcategory))
 
-    def __str__(self) -> str:
-        """Return the string representation of the `Category` domain object.
+    @staticmethod
+    def from_string(category_string: str) -> "Category":
+        """Create a `Category` domain object from a string.
 
-        Returns:
-            The string representation of the `Category` domain
-        """
-        return f"{self.major}.{self.minor}" if self.minor else self.major
-
-    def __repr__(self) -> str:
-        """Return the string representation of the `Category` domain object.
+        Args:
+            category_string: The category string in the format "archive.subcategory".
 
         Returns:
-            The string representation of the `Category` domain
+            The `Category` domain object.
         """
-        return f"Category(major={self.major!r}, minor={self.minor!r})"
+        return Category(*Category.split_string(category_string))
+
+    @staticmethod
+    def split_string(category_string: str) -> tuple[str, str | None]:
+        """Split a category string into archive and subcategory.
+
+        Args:
+            category_string: The category string in the format "archive.subcategory".
+
+        Returns:
+            A tuple containing the archive and subcategory.
+        """
+        parts = category_string.split(".")
+        return parts[0], parts[1] if len(parts) > 1 else None

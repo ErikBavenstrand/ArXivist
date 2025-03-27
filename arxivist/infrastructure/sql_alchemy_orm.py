@@ -1,10 +1,12 @@
 import datetime
 
 from sqlalchemy import (
+    Column,
     Date,
     ForeignKey,
     Integer,
     String,
+    Table,
     UniqueConstraint,
 )
 from sqlalchemy.orm import (
@@ -19,8 +21,39 @@ class Base(DeclarativeBase):
     """Base class for all SQLAlchemy ORM models."""
 
 
+paper_category = Table(
+    "paper_category",
+    Base.metadata,
+    Column("paper_id", Integer, ForeignKey("paper.id", ondelete="CASCADE"), primary_key=True),
+    Column("category_id", Integer, ForeignKey("category.id", ondelete="CASCADE"), primary_key=True),
+    UniqueConstraint("paper_id", "category_id", name="uq_paper_category"),
+)
+"""`SQLAlchemy` association table for the many-to-many relationship between papers and categories."""
+
+
+class CategoryORM(Base):
+    """`SQLAlchemy` ORM model representing an ArXiv category in the database."""
+
+    __tablename__ = "category"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    archive: Mapped[str] = mapped_column(String, nullable=False)
+    subcategory: Mapped[str | None] = mapped_column(String, nullable=True)
+    archive_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    category_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    description: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    papers: Mapped[list["PaperORM"]] = relationship(
+        "PaperORM",
+        secondary=paper_category,
+        back_populates="categories",
+    )
+
+    __table_args__ = (UniqueConstraint("archive", "subcategory", name="uq_category_archive_subcategory"),)
+
+
 class PaperORM(Base):
-    """`SQLAlchemy` ORM model representing a paper in the database."""
+    """`SQLAlchemy` ORM model representing an ArXiv paper in the database."""
 
     __tablename__ = "paper"
 
@@ -30,34 +63,8 @@ class PaperORM(Base):
     abstract: Mapped[str] = mapped_column(String)
     published_at: Mapped[datetime.date] = mapped_column(Date)
 
-    categories: Mapped[set["CategoryORM"]] = relationship(
+    categories: Mapped[list["CategoryORM"]] = relationship(
         "CategoryORM",
-        back_populates="paper",
-        collection_class=set,
-        cascade="all, delete-orphan",
-    )
-
-
-class CategoryORM(Base):
-    """`SQLAlchemy` ORM model representing a category in the database."""
-
-    __tablename__ = "category"
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    paper_id: Mapped[int] = mapped_column(
-        Integer,
-        ForeignKey("paper.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    major: Mapped[str] = mapped_column(String, nullable=False)
-    minor: Mapped[str] = mapped_column(String, nullable=True)
-
-    paper: Mapped["PaperORM"] = relationship("PaperORM", back_populates="categories")
-
-    __table_args__ = (
-        UniqueConstraint(
-            "paper_id",
-            "major",
-            "minor",
-            name="uq_category_paper_id_major_minor",
-        ),
+        secondary=paper_category,
+        back_populates="papers",
     )
