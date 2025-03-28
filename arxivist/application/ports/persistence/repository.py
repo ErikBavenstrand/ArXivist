@@ -3,6 +3,31 @@ from abc import ABC, abstractmethod
 from arxivist.domain import model
 
 
+class CategoryNotFoundError(Exception):
+    """Exception raised when a category is not found in the repository."""
+
+    def __init__(self, archive: str, subcategory: str | None) -> None:
+        """Initializes the `CategoryNotFoundError` exception.
+
+        Args:
+            archive: The archive name.
+            subcategory: The subcategory name.
+        """
+        super().__init__(f"Category with archive {archive!r} and subcategory {subcategory!r} not found.")
+
+
+class PaperNotFoundError(Exception):
+    """Exception raised when a paper is not found in the repository."""
+
+    def __init__(self, arxiv_id: str) -> None:
+        """Initializes the `PaperNotFoundError` exception.
+
+        Args:
+            arxiv_id: The ArXiv ID of the paper.
+        """
+        super().__init__(f"Paper with ArXiv ID {arxiv_id!r} not found.")
+
+
 class AbstractPaperRepository(ABC):
     """Abstract `Paper` domain object repository."""
 

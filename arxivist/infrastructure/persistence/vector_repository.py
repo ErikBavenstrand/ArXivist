@@ -1,12 +1,14 @@
 from pymilvus import CollectionSchema, DataType, MilvusClient
 from pymilvus.milvus_client import IndexParams
 
-from arxivist.application.ports.vector_repository import AbstractVectorRepository, VectorSearchFilter
-from arxivist.domain.model import Paper
-from arxivist.infrastructure.exceptions import (
+from arxivist.application.ports.persistence.vector_repository import (
+    AbstractVectorRepository,
+    VectorSearchFilter,
+    VectoryRepositoryDeletionError,
     VectoryRepositoryInsertionError,
     VectoryRepositoryQueryError,
 )
+from arxivist.domain.model import Paper
 
 
 class MilvusVectorSearchFilterTransformer:
@@ -161,8 +163,15 @@ class MilvusVectorRepository(AbstractVectorRepository):
 
         Args:
             arxiv_ids: List of ArXiv IDs of the embeddings to delete.
+
+        Raises:
+            VectoryRepositoryDeletionError: If there is an error deleting the embeddings from the Milvus collection.
         """
-        self.client.delete(collection_name=self.COLLECTION_NAME, ids=arxiv_ids)
+        try:
+            self.client.delete(collection_name=self.COLLECTION_NAME, ids=arxiv_ids)
+        except Exception as e:
+            error_msg = f"Error deleting embeddings from Milvus collection {self.COLLECTION_NAME!r}."
+            raise VectoryRepositoryDeletionError(error_msg) from e
 
     def query_embedding(
         self,

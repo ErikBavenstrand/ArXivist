@@ -1,10 +1,13 @@
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
-from arxivist.application.ports.repository import AbstractPaperRepository
+from arxivist.application.ports.persistence.repository import (
+    AbstractPaperRepository,
+    CategoryNotFoundError,
+    PaperNotFoundError,
+)
 from arxivist.domain import model
-from arxivist.infrastructure.exceptions import CategoryNotFoundError, PaperNotFoundError
-from arxivist.infrastructure.sql_alchemy_orm import CategoryORM, PaperORM
+from arxivist.infrastructure.persistence.orm import CategoryORM, PaperORM
 
 
 class SqlAlchemyPaperRepository(AbstractPaperRepository):

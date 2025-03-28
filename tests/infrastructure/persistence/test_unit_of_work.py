@@ -4,8 +4,8 @@ import pytest
 from sqlalchemy.orm import Session, sessionmaker
 
 from arxivist.domain.model import Category, Paper
-from arxivist.infrastructure.sql_alchemy_repository import SqlAlchemyPaperRepository
-from arxivist.infrastructure.sql_alchemy_unit_of_work import SqlAlchemyUnitOfWork
+from arxivist.infrastructure.persistence.repository import SqlAlchemyPaperRepository
+from arxivist.infrastructure.persistence.unit_of_work import SqlAlchemyUnitOfWork
 
 
 @pytest.fixture

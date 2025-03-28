@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from arxivist.infrastructure.sql_alchemy_orm import Base
+from arxivist.infrastructure.persistence.orm import Base
 
 
 @pytest.fixture(scope="module")

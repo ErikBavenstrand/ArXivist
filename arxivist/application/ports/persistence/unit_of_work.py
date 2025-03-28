@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from types import TracebackType
 
-from arxivist.application.ports.repository import AbstractPaperRepository
+from arxivist.application.ports.persistence.repository import AbstractPaperRepository
 
 
 class AbstractUnitOfWork(ABC):

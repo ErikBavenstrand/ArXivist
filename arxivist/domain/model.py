@@ -2,7 +2,7 @@ import datetime
 from dataclasses import dataclass, field
 
 
-@dataclass
+@dataclass(frozen=True)
 class Paper:
     """Domain object for an ArXiv paper."""
 

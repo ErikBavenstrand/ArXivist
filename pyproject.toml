@@ -5,11 +5,13 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "beautifulsoup4>=4.13.3",
     "click>=8.1.8",
     "feedparser>=6.0.11",
     "openai>=1.66.3",
     "pymilvus>=2.5.5",
     "python-dotenv>=1.0.1",
+    "requests>=2.32.3",
     "sqlalchemy>=2.0.39",
 ]
 
@@ -34,6 +36,7 @@ ignore = [
     "CPY",
     "D100",
     "D104",
+    "DOC502",
     "PLR6301",
 ]
 
@@ -50,13 +53,13 @@ ignore = [
     "D106",
     "D107",
     "EM101",
+    "EM102",
     "PLR0913",
     "PLR2004",
     "PLR6301",
     "S101",
     "TRY002",
     "TRY003",
-    "EM102",
 ]
 
 [tool.ruff.format]

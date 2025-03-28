@@ -3,17 +3,31 @@ import datetime
 import pymilvus
 import pytest
 
-from arxivist.application.ports.vector_repository import VectorSearchFilter
+from arxivist.application.ports.persistence.vector_repository import (
+    VectorSearchFilter,
+    VectoryRepositoryDeletionError,
+    VectoryRepositoryInsertionError,
+    VectoryRepositoryQueryError,
+)
 from arxivist.domain.model import Category, Paper
-from arxivist.infrastructure.exceptions import VectoryRepositoryInsertionError, VectoryRepositoryQueryError
-from arxivist.infrastructure.milvus_vector_repository import MilvusVectorRepository, MilvusVectorSearchFilterTransformer
+from arxivist.infrastructure.persistence.vector_repository import (
+    MilvusVectorRepository,
+    MilvusVectorSearchFilterTransformer,
+)
 
 
 class FakeMilvusClient(pymilvus.MilvusClient):
-    def __init__(self, *, insert_error: Exception | None = None, query_error: Exception | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        insert_error: Exception | None = None,
+        query_error: Exception | None = None,
+        delete_error: Exception | None = None,
+    ) -> None:
         self.collections = {}
         self.insert_error = insert_error
         self.query_error = query_error
+        self.delete_error = delete_error
 
     def has_collection(self, collection_name: str, *args, **kwargs) -> bool:
         return collection_name in self.collections
@@ -39,6 +53,9 @@ class FakeMilvusClient(pymilvus.MilvusClient):
         raise ValueError(f"Collection {collection_name} does not exist.")
 
     def delete(self, collection_name: str, ids: list, *args, **kwargs) -> dict[str, int]:
+        if self.delete_error is not None:
+            raise self.delete_error
+
         if collection_name in self.collections:
             self.collections[collection_name]["data"] = [
                 item for item in self.collections[collection_name]["data"] if item["entity"]["arxiv_id"] not in ids
@@ -192,6 +209,16 @@ class TestMilvusVectorRepository:
                 },
             },
         ]
+
+    def test_delete_embeddings_failure(self) -> None:
+        fake_milvus_client = FakeMilvusClient(delete_error=Exception("Some error"))
+        repository = MilvusVectorRepository(fake_milvus_client, dimensions=3)
+
+        with pytest.raises(
+            VectoryRepositoryDeletionError,
+            match=f"Error deleting embeddings from Milvus collection {repository.COLLECTION_NAME!r}.",
+        ):
+            repository.delete_embeddings(["1234.5678"])
 
     def test_query_embedding(self) -> None:
         fake_milvus_client = FakeMilvusClient()

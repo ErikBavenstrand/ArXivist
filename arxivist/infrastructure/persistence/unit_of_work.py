@@ -2,10 +2,8 @@ from types import TracebackType
 
 from sqlalchemy.orm import Session, sessionmaker
 
-from arxivist.application.ports.unit_of_work import AbstractUnitOfWork
-from arxivist.infrastructure.sql_alchemy_repository import (
-    SqlAlchemyPaperRepository,
-)
+from arxivist.application.ports.persistence.unit_of_work import AbstractUnitOfWork
+from arxivist.infrastructure.persistence.repository import SqlAlchemyPaperRepository
 
 
 class SqlAlchemyUnitOfWork(AbstractUnitOfWork):

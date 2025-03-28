@@ -3,9 +3,9 @@ import datetime
 import pytest
 from sqlalchemy.orm import Session
 
+from arxivist.application.ports.persistence.repository import CategoryNotFoundError, PaperNotFoundError
 from arxivist.domain.model import Category, Paper
-from arxivist.infrastructure.exceptions import CategoryNotFoundError, PaperNotFoundError
-from arxivist.infrastructure.sql_alchemy_repository import SqlAlchemyPaperRepository
+from arxivist.infrastructure.persistence.repository import SqlAlchemyPaperRepository
 
 
 @pytest.fixture

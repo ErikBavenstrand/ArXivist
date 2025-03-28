@@ -2,8 +2,7 @@ from typing import Literal, overload
 
 import openai
 
-from arxivist.application.ports.embedding_model import AbstractEmbeddingModel
-from arxivist.infrastructure.exceptions import EmbeddingModelError
+from arxivist.application.ports.embedding_model import AbstractEmbeddingModel, EmbeddingModelError
 
 
 class OpenAIEmbeddingModel(AbstractEmbeddingModel):

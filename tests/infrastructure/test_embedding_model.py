@@ -2,8 +2,8 @@ import openai
 import openai.resources
 import pytest
 
-from arxivist.infrastructure.exceptions import EmbeddingModelError
-from arxivist.infrastructure.openai_embedding_model import OpenAIEmbeddingModel
+from arxivist.application.ports.embedding_model import EmbeddingModelError
+from arxivist.infrastructure.embedding_model import OpenAIEmbeddingModel
 
 
 class FakeOpenAIClient(openai.OpenAI):
