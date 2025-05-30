@@ -14,14 +14,14 @@ from arxivist.domain.model import Paper
 class MilvusVectorSearchFilterTransformer:
     """Transformer for converting a `VectorSearchFilter` to a Milvus filter string."""
 
-    def __init__(self, categories_field_name: str, published_at_field_name: str) -> None:
+    def __init__(self, category_identifiers_field_name: str, published_at_field_name: str) -> None:
         """Initializes the transformer with field names.
 
         Args:
-            categories_field_name: The field name for categories in the Milvus collection.
+            category_identifiers_field_name: The field name for category identifiers in the Milvus collection.
             published_at_field_name: The field name for published date in the Milvus collection.
         """
-        self.categories_field_name = categories_field_name
+        self.categories_field_name = category_identifiers_field_name
         self.published_at_field_name = published_at_field_name
 
     def transform(self, filters: VectorSearchFilter) -> str:
@@ -34,11 +34,11 @@ class MilvusVectorSearchFilterTransformer:
             The generated Milvus filter string.
         """
         milvus_filter: list[str] = []
-        if filters.categories:
+        if filters.category_identifiers:
             milvus_filter.append(
                 " && ".join(
-                    f'ARRAY_CONTAINS({self.categories_field_name}, "{category}")'
-                    for category in [category.identifier for category in filters.categories]
+                    f'ARRAY_CONTAINS({self.categories_field_name}, "{category_identifier}")'
+                    for category_identifier in filters.category_identifiers
                 ),
             )
         if filters.published_after:
@@ -65,8 +65,8 @@ class MilvusVectorRepository(AbstractVectorRepository):
     EMBEDDING_FIELD_NAME = "embedding"
     """Field name for embeddings in the Milvus collection."""
 
-    CATEGORIES_FIELD_NAME = "categories"
-    """Field name for categories in the Milvus collection."""
+    CATEGORY_IDENTIFIERS_FIELD_NAME = "category_identifiers"
+    """Field name for category identifiers in the Milvus collection."""
 
     PUBLISHED_AT_FIELD_NAME = "published_at"
     """Field name for published date in the Milvus collection."""
@@ -81,7 +81,7 @@ class MilvusVectorRepository(AbstractVectorRepository):
         self.client = milvus_client
         self.dimensions = dimensions
         self.filter_transformer = MilvusVectorSearchFilterTransformer(
-            categories_field_name=self.CATEGORIES_FIELD_NAME,
+            category_identifiers_field_name=self.CATEGORY_IDENTIFIERS_FIELD_NAME,
             published_at_field_name=self.PUBLISHED_AT_FIELD_NAME,
         )
 
@@ -111,7 +111,12 @@ class MilvusVectorRepository(AbstractVectorRepository):
         schema = MilvusClient.create_schema(auto_id=False, enable_dynamic_field=False)
         schema.add_field(self.ARXIV_ID_FIELD_NAME, DataType.VARCHAR, max_length=20, is_primary=True)
         schema.add_field(self.EMBEDDING_FIELD_NAME, DataType.FLOAT_VECTOR, dim=self.dimensions)
-        schema.add_field(self.CATEGORIES_FIELD_NAME, DataType.ARRAY, element_type=DataType.VARCHAR, max_length=20)
+        schema.add_field(
+            self.CATEGORY_IDENTIFIERS_FIELD_NAME,
+            DataType.ARRAY,
+            element_type=DataType.VARCHAR,
+            max_length=20,
+        )
         schema.add_field(self.PUBLISHED_AT_FIELD_NAME, DataType.INT64)
         return schema
 
@@ -146,7 +151,7 @@ class MilvusVectorRepository(AbstractVectorRepository):
             {
                 self.ARXIV_ID_FIELD_NAME: paper.arxiv_id,
                 self.EMBEDDING_FIELD_NAME: embedding,
-                self.CATEGORIES_FIELD_NAME: [category.identifier for category in paper.categories],
+                self.CATEGORY_IDENTIFIERS_FIELD_NAME: [str(category.identifier) for category in paper.categories],
                 self.PUBLISHED_AT_FIELD_NAME: paper.published_at_int,
             }
             for embedding, paper in zip(embeddings, papers, strict=True)
@@ -176,6 +181,7 @@ class MilvusVectorRepository(AbstractVectorRepository):
     def query_embedding(
         self,
         query_embedding: list[float],
+        *,
         top_k: int,
         filters: VectorSearchFilter | None = None,
     ) -> list[str]:

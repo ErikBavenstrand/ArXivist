@@ -55,37 +55,16 @@ def fetch_categories() -> None:
 def fetch_latest_papers(categories: list[str], all_categories: bool) -> None:
     """Fetch and store the latest papers from ArXiv."""
     if all_categories:
-        categories = [
-            "astro-ph",
-            "cond-mat",
-            "cs",
-            "econ",
-            "eess",
-            "gr-qc",
-            "hep-ex",
-            "hep-lat",
-            "hep-ph",
-            "hep-th",
-            "math",
-            "math-ph",
-            "nlin",
-            "nucl-ex",
-            "nucl-th",
-            "physics",
-            "q-bio",
-            "q-fin",
-            "quant-ph",
-            "stat",
-        ]
-        click.echo(f"Fetching papers from all {len(categories)} categories.")
+        click.echo("Fetching papers from all categories.")
     elif not categories:
         click.echo("Error: You must specify either --categories or --all.", err=True)
         return
     else:
         click.echo(f"Fetching papers from {len(categories)} categories: {categories!r}")
+
     try:
         papers = fetch_and_store_latest_papers(
-            categories=categories,
+            categories=categories or None,
             arxiv_paper_extractor=arxiv_paper_extractor,
             uow=uow,
         )

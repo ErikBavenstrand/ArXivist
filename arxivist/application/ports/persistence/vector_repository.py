@@ -21,8 +21,8 @@ class VectoryRepositoryQueryError(Exception):
 class VectorSearchFilter:
     """Technology-agnostic filter for vector search."""
 
-    categories: list[model.Category] | None = None
-    """List of categories to filter the search results by (AND operation)."""
+    category_identifiers: list[model.CategoryIdentifier] | None = None
+    """List of category identifiers to filter the search results by."""
 
     published_after: datetime.date | None = None
     """Date to filter the search results by, only papers published on or after this date will be included."""
@@ -63,6 +63,7 @@ class AbstractVectorRepository(ABC):
     def query_embedding(
         self,
         query_embedding: list[float],
+        *,
         top_k: int,
         filters: VectorSearchFilter | None,
     ) -> list[str]:

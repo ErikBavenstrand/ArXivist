@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 
 from arxivist.application.ports.persistence.repository import (
     AbstractPaperRepository,
-    CategoryNotFoundError,
-    PaperNotFoundError,
+    CategoriesNotFoundError,
+    PapersNotFoundError,
 )
 from arxivist.domain import model
 from arxivist.infrastructure.persistence.orm import CategoryORM, PaperORM
@@ -21,38 +21,47 @@ class SqlAlchemyPaperRepository(AbstractPaperRepository):
         """
         self.session = session
 
-    def upsert_category(self, category: model.Category) -> None:
-        """Upserts a `Category` domain object into the database.
+    def upsert_categories(self, categories: list[model.Category]) -> None:
+        """Upserts a list of `Category` domain objects into the database.
 
         Args:
-            category: The `Category` domain object to upsert.
+            categories: A list of `Category` domain objects to upsert.
         """
-        category_orm = (
+        existing_category_orms = (
             self.session.query(CategoryORM)
             .filter(
-                and_(
-                    CategoryORM.archive == category.archive,
-                    CategoryORM.subcategory.is_(None)
-                    if category.subcategory is None
-                    else CategoryORM.subcategory == category.subcategory,
-                ),
+                or_(*[
+                    and_(
+                        CategoryORM.archive == category.identifier.archive,
+                        CategoryORM.subcategory.is_(None)
+                        if category.identifier.subcategory is None
+                        else CategoryORM.subcategory == category.identifier.subcategory,
+                    )
+                    for category in set(categories)
+                ]),
             )
-            .first()
+            .all()
         )
-        if category_orm:
-            category_orm.archive_name = category.archive_name
-            category_orm.category_name = category.category_name
-            category_orm.description = category.description
-        else:
-            self.session.add(self._to_category_orm(category))
+        existing_category_map = {
+            (category_orm.archive, category_orm.subcategory): category_orm for category_orm in existing_category_orms
+        }
+
+        for category in set(categories):
+            category_orm = existing_category_map.get((category.identifier.archive, category.identifier.subcategory))
+            if category_orm:
+                category_orm.archive_name = category.archive_name
+                category_orm.category_name = category.category_name
+                category_orm.description = category.description
+            else:
+                self.session.add(self._to_category_orm(category))
+
         self.session.flush()
 
-    def get_category(self, archive: str, subcategory: str | None) -> model.Category | None:
+    def get_category(self, category_identifier: model.CategoryIdentifier) -> model.Category | None:
         """Fetches a `Category` domain object from the database.
 
         Args:
-            archive: The archive name.
-            subcategory: The subcategory name.
+            category_identifier: The `CategoryIdentifier` domain object.
 
         Returns:
             The `Category` domain object if found, otherwise `None`.
@@ -61,45 +70,72 @@ class SqlAlchemyPaperRepository(AbstractPaperRepository):
             self.session.query(CategoryORM)
             .filter(
                 and_(
-                    CategoryORM.archive == archive,
+                    CategoryORM.archive == category_identifier.archive,
                     CategoryORM.subcategory.is_(None)
-                    if subcategory is None
-                    else CategoryORM.subcategory == subcategory,
+                    if category_identifier.subcategory is None
+                    else CategoryORM.subcategory == category_identifier.subcategory,
                 ),
             )
             .first()
         )
         return self._to_category(category_orm) if category_orm else None
 
-    def delete_category(self, archive: str, subcategory: str | None) -> None:
-        """Deletes a `Category` domain object from the database.
+    def get_subcategories(self, archive: str) -> list[model.Category]:
+        """Fetches all subcategories for a given archive.
 
         Args:
             archive: The archive name.
-            subcategory: The subcategory name.
+
+        Returns:
+            A list of `Category` domain objects representing the subcategories.
+        """
+        subcategories_orm = (
+            self.session.query(CategoryORM)
+            .filter(CategoryORM.archive == archive, CategoryORM.subcategory.isnot(None))
+            .all()
+        )
+        return [self._to_category(subcategory_orm) for subcategory_orm in subcategories_orm]
+
+    def delete_categories(self, category_identifiers: list[model.CategoryIdentifier]) -> None:
+        """Deletes the specified `Category` domain objects from the database.
+
+        Args:
+            category_identifiers: A list of `CategoryIdentifier` domain objects representing the categories to delete.
 
         Raises:
-            CategoryNotFoundError: If the category is not found in the database.
+            CategoriesNotFoundError: If any of the categories are not found in the database.
         """
-        category_orm = (
+        category_orms = (
             self.session.query(CategoryORM)
             .filter(
-                and_(
-                    CategoryORM.archive == archive,
-                    CategoryORM.subcategory.is_(None)
-                    if subcategory is None
-                    else CategoryORM.subcategory == subcategory,
-                ),
+                or_(*[
+                    and_(
+                        CategoryORM.archive == category_identifier.archive,
+                        CategoryORM.subcategory.is_(None)
+                        if category_identifier.subcategory is None
+                        else CategoryORM.subcategory == category_identifier.subcategory,
+                    )
+                    for category_identifier in set(category_identifiers)
+                ]),
             )
-            .first()
+            .all()
         )
-        if not category_orm:
-            raise CategoryNotFoundError(archive, subcategory)
 
-        self.session.delete(category_orm)
+        missing_categories = list(
+            set(category_identifiers)
+            - {
+                model.CategoryIdentifier(category_orm.archive, category_orm.subcategory)
+                for category_orm in category_orms
+            },
+        )
+        if missing_categories:
+            raise CategoriesNotFoundError(missing_categories)
+
+        for category_orm in category_orms:
+            self.session.delete(category_orm)
         self.session.flush()
 
-    def list_categories(self, limit: int = 50) -> list[model.Category]:
+    def list_categories(self, *, limit: int | None = 50) -> list[model.Category]:
         """Lists all `Category` domain objects in the database.
 
         Args:
@@ -111,51 +147,67 @@ class SqlAlchemyPaperRepository(AbstractPaperRepository):
         categories_orm = self.session.query(CategoryORM).order_by(CategoryORM.id).limit(limit).all()
         return [self._to_category(category_orm) for category_orm in categories_orm]
 
-    def upsert_paper(self, paper: model.Paper) -> None:
-        """Upserts a `Paper` domain object into the database.
-
-        If any of the categories associated with the paper are missing in the database,
-        they will be added. The paper itself will be updated or inserted as necessary.
+    def upsert_papers(self, papers: list[model.Paper]) -> None:
+        """Upserts a list of `Paper` domain objects into the database.
 
         Args:
-            paper: The `Paper` domain object to upsert.
+            papers: A list of `Paper` domain objects to upsert.
+
+        Raises:
+            CategoriesNotFoundError: If any of the categories are not found in the database.
         """
-        existing_category_orms = (
+        categories = {category for paper in papers for category in paper.categories}
+        category_orms = (
             self.session.query(CategoryORM)
             .filter(
                 or_(*[
                     and_(
-                        CategoryORM.archive == category.archive,
+                        CategoryORM.archive == category.identifier.archive,
                         CategoryORM.subcategory.is_(None)
-                        if category.subcategory is None
-                        else CategoryORM.subcategory == category.subcategory,
+                        if category.identifier.subcategory is None
+                        else CategoryORM.subcategory == category.identifier.subcategory,
                     )
-                    for category in paper.categories
+                    for category in categories
                 ]),
             )
             .all()
         )
-
-        category_orms = existing_category_orms
-        missing_categories = set(paper.categories) - {
-            model.Category(archive=category_orm.archive, subcategory=category_orm.subcategory)
-            for category_orm in existing_category_orms
-        }
+        missing_categories = list(
+            {category.identifier for category in categories}
+            - {
+                model.CategoryIdentifier(category_orm.archive, category_orm.subcategory)
+                for category_orm in category_orms
+            },
+        )
         if missing_categories:
-            for category in missing_categories:
-                category_orm = self._to_category_orm(category)
-                self.session.add(category_orm)
-                category_orms.append(category_orm)
-            self.session.flush()
+            raise CategoriesNotFoundError(missing_categories)
 
-        paper_orm = self.session.query(PaperORM).filter_by(arxiv_id=paper.arxiv_id).first()
-        if paper_orm:
-            paper_orm.title = paper.title
-            paper_orm.abstract = paper.abstract
-            paper_orm.published_at = paper.published_at
-            paper_orm.categories = category_orms
-        else:
-            self.session.add(self._to_paper_orm(paper, category_orms))
+        category_orm_map = {
+            (category_orm.archive, category_orm.subcategory): category_orm for category_orm in category_orms
+        }
+
+        existing_paper_orms = (
+            self.session.query(PaperORM).filter(PaperORM.arxiv_id.in_({paper.arxiv_id for paper in papers})).all()
+        )
+        existing_paper_map = {paper_orm.arxiv_id: paper_orm for paper_orm in existing_paper_orms}
+
+        for paper in set(papers):
+            paper_orm = existing_paper_map.get(paper.arxiv_id)
+
+            category_orms = [
+                category_orm_map[category.identifier.archive, category.identifier.subcategory]
+                for category in paper.categories
+            ]
+
+            if paper_orm:
+                paper_orm.title = paper.title
+                paper_orm.abstract = paper.abstract
+                paper_orm.published_at = paper.published_at
+                paper_orm.categories = category_orms
+            else:
+                paper_orm = self._to_paper_orm(paper, category_orms)
+                self.session.add(paper_orm)
+
         self.session.flush()
 
     def get_paper(self, arxiv_id: str) -> model.Paper | None:
@@ -170,23 +222,30 @@ class SqlAlchemyPaperRepository(AbstractPaperRepository):
         paper_orm = self.session.query(PaperORM).filter_by(arxiv_id=arxiv_id).first()
         return self._to_paper(paper_orm) if paper_orm else None
 
-    def delete_paper(self, arxiv_id: str) -> None:
-        """Deletes a `Paper` domain object from the database.
+    def delete_papers(self, arxiv_ids: list[str]) -> None:
+        """Deletes the specified `Paper` domain objects from the database.
 
         Args:
-            arxiv_id: The ArXiv ID of the paper.
+            arxiv_ids: A list of ArXiv IDs representing the papers to delete.
 
         Raises:
-            PaperNotFoundError: If the paper is not found in the database.
+            PapersNotFoundError: If any of the papers are not found in the database.
         """
-        paper_orm = self.session.query(PaperORM).filter_by(arxiv_id=arxiv_id).first()
-        if not paper_orm:
-            raise PaperNotFoundError(arxiv_id)
+        paper_orms = (
+            self.session.query(PaperORM)
+            .filter(or_(*[PaperORM.arxiv_id == arxiv_id for arxiv_id in set(arxiv_ids)]))
+            .all()
+        )
 
-        self.session.delete(paper_orm)
+        missing_papers = list(set(arxiv_ids) - {paper_orm.arxiv_id for paper_orm in paper_orms})
+        if missing_papers:
+            raise PapersNotFoundError(missing_papers)
+
+        for paper_orm in paper_orms:
+            self.session.delete(paper_orm)
         self.session.flush()
 
-    def list_papers(self, limit: int = 50) -> list[model.Paper]:
+    def list_papers(self, *, limit: int | None = 50) -> list[model.Paper]:
         """Lists all `Paper` domain objects in the database.
 
         Args:
@@ -200,9 +259,17 @@ class SqlAlchemyPaperRepository(AbstractPaperRepository):
 
     @staticmethod
     def _to_category_orm(category: model.Category) -> CategoryORM:
+        """Converts a `Category` domain object to a `CategoryORM` ORM object.
+
+        Args:
+            category: The `Category` domain object to convert.
+
+        Returns:
+            The converted `CategoryORM` ORM.
+        """
         return CategoryORM(
-            archive=category.archive,
-            subcategory=category.subcategory,
+            archive=category.identifier.archive,
+            subcategory=category.identifier.subcategory,
             archive_name=category.archive_name,
             category_name=category.category_name,
             description=category.description,
@@ -210,9 +277,19 @@ class SqlAlchemyPaperRepository(AbstractPaperRepository):
 
     @staticmethod
     def _to_category(category_orm: CategoryORM) -> model.Category:
+        """Converts a `CategoryORM` ORM object to a `Category` domain object.
+
+        Args:
+            category_orm: The `CategoryORM` ORM object to convert.
+
+        Returns:
+            The converted `Category` domain object.
+        """
         return model.Category(
-            archive=category_orm.archive,
-            subcategory=category_orm.subcategory,
+            identifier=model.CategoryIdentifier(
+                archive=category_orm.archive,
+                subcategory=category_orm.subcategory,
+            ),
             archive_name=category_orm.archive_name,
             category_name=category_orm.category_name,
             description=category_orm.description,

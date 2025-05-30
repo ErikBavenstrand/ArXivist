@@ -12,11 +12,7 @@ class AbstractEmbeddingModel(ABC):
     @property
     @abstractmethod
     def dimensions(self) -> int:
-        """Get the dimensions of the embedding model.
-
-        Returns:
-            The number of dimensions for the embedding model.
-        """
+        """Get the dimensions of the embedding model."""
         raise NotImplementedError
 
     @overload

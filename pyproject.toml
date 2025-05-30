@@ -12,6 +12,7 @@ dependencies = [
     "pymilvus>=2.5.5",
     "python-dotenv>=1.0.1",
     "requests>=2.32.3",
+    "sentence-transformers>=4.1.0",
     "sqlalchemy>=2.0.39",
 ]
 
@@ -38,6 +39,7 @@ ignore = [
     "D104",
     "DOC502",
     "FBT001",
+    "PLR2004",
     "PLR6301",
 ]
 

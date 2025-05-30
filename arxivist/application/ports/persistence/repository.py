@@ -3,50 +3,49 @@ from abc import ABC, abstractmethod
 from arxivist.domain import model
 
 
-class CategoryNotFoundError(Exception):
-    """Exception raised when a category is not found in the repository."""
+class CategoriesNotFoundError(Exception):
+    """Exception raised when categories are not found in the repository."""
 
-    def __init__(self, archive: str, subcategory: str | None) -> None:
-        """Initializes the `CategoryNotFoundError` exception.
-
-        Args:
-            archive: The archive name.
-            subcategory: The subcategory name.
-        """
-        super().__init__(f"Category with archive {archive!r} and subcategory {subcategory!r} not found.")
-
-
-class PaperNotFoundError(Exception):
-    """Exception raised when a paper is not found in the repository."""
-
-    def __init__(self, arxiv_id: str) -> None:
-        """Initializes the `PaperNotFoundError` exception.
+    def __init__(self, category_identifiers: list[model.CategoryIdentifier]) -> None:
+        """Initializes the `CategoriesNotFoundError` exception.
 
         Args:
-            arxiv_id: The ArXiv ID of the paper.
+            category_identifiers: A list of `CategoryIdentifier` domain objects representing the categories
+                that were not found.
         """
-        super().__init__(f"Paper with ArXiv ID {arxiv_id!r} not found.")
+        super().__init__(f"Categories {category_identifiers!r} not found in the repository.")
+
+
+class PapersNotFoundError(Exception):
+    """Exception raised when papers and not found in the repository."""
+
+    def __init__(self, arxiv_ids: list[str]) -> None:
+        """Initializes the `PapersNotFoundError` exception.
+
+        Args:
+            arxiv_ids: The ArXiv IDs of the papers that were not found.
+        """
+        super().__init__(f"Papers with ArXiv IDs {arxiv_ids!r} not found in the repository.")
 
 
 class AbstractPaperRepository(ABC):
     """Abstract `Paper` domain object repository."""
 
     @abstractmethod
-    def upsert_category(self, category: model.Category) -> None:
-        """Upserts a `Category` domain object into the database.
+    def upsert_categories(self, categories: list[model.Category]) -> None:
+        """Upserts a list of `Category` domain objects into the database.
 
         Args:
-            category: The `Category` domain object to add.
+            categories: A list of `Category` domain objects to upsert.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def get_category(self, archive: str, subcategory: str | None) -> model.Category | None:
+    def get_category(self, category_identifier: model.CategoryIdentifier) -> model.Category | None:
         """Fetches a `Category` domain object from the database.
 
         Args:
-            archive: The archive name.
-            subcategory: The subcategory name.
+            category_identifier: The `CategoryIdentifier` domain object.
 
         Returns:
             The `Category` domain object if found, otherwise `None`.
@@ -54,20 +53,31 @@ class AbstractPaperRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def delete_category(self, archive: str, subcategory: str | None) -> None:
-        """Deletes a `Category` domain object from the database.
+    def get_subcategories(self, archive: str) -> list[model.Category]:
+        """Fetches all subcategories for a given archive.
 
         Args:
             archive: The archive name.
-            subcategory: The subcategory name.
 
-        Raises:
-            CategoryNotFoundError: If the category is not found in the database.
+        Returns:
+            A list of `Category` domain objects representing the subcategories.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def list_categories(self, limit: int) -> list[model.Category]:
+    def delete_categories(self, category_identifiers: list[model.CategoryIdentifier]) -> None:
+        """Deletes the specified `Category` domain objects from the database.
+
+        Args:
+            category_identifiers: A list of `CategoryIdentifier` domain objects representing the categories to delete.
+
+        Raises:
+            CategoryNotFoundError: If any of the categories are not found in the database.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def list_categories(self, *, limit: int | None) -> list[model.Category]:
         """Lists all `Category` domain objects in the database.
 
         Args:
@@ -79,14 +89,14 @@ class AbstractPaperRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def upsert_paper(self, paper: model.Paper) -> None:
-        """Upserts a `Paper` domain object into the database.
-
-        If any of the categories associated with the paper are missing in the database,
-        they will be added. The paper itself will be updated or inserted as necessary.
+    def upsert_papers(self, papers: list[model.Paper]) -> None:
+        """Upserts a list of `Paper` domain objects into the database.
 
         Args:
-            paper: The `Paper` domain object to upsert.
+            papers: A list of `Paper` domain objects to upsert.
+
+        Raises:
+            CategoriesNotFoundError: If any of the categories are not found in the database.
         """
         raise NotImplementedError
 
@@ -103,19 +113,19 @@ class AbstractPaperRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def delete_paper(self, arxiv_id: str) -> None:
-        """Deletes a `Paper` domain object from the database.
+    def delete_papers(self, arxiv_ids: list[str]) -> None:
+        """Deletes the specified `Paper` domain objects from the database.
 
         Args:
-            arxiv_id: The ArXiv ID of the paper.
+            arxiv_ids: A list of ArXiv IDs representing the papers to delete.
 
         Raises:
-            PaperNotFoundError: If the paper is not found in the database.
+            PaperNotFoundError: If any of the papers are not found in the database.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def list_papers(self, limit: int) -> list[model.Paper]:
+    def list_papers(self, *, limit: int | None) -> list[model.Paper]:
         """Lists all `Paper` domain objects in the database.
 
         Args:

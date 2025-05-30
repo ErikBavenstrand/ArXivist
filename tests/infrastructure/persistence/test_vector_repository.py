@@ -9,7 +9,7 @@ from arxivist.application.ports.persistence.vector_repository import (
     VectoryRepositoryInsertionError,
     VectoryRepositoryQueryError,
 )
-from arxivist.domain.model import Category, Paper
+from arxivist.domain import model
 from arxivist.infrastructure.persistence.vector_repository import (
     MilvusVectorRepository,
     MilvusVectorSearchFilterTransformer,
@@ -76,7 +76,10 @@ class TestMilvusVectorSearchFilterTransformer:
         transformer = MilvusVectorSearchFilterTransformer("categories", "published_at")
 
         filters = VectorSearchFilter(
-            categories=[Category.from_string("cs.AI"), Category.from_string("econ")],
+            category_identifiers=[
+                model.CategoryIdentifier.from_string("cs.AI"),
+                model.CategoryIdentifier.from_string("econ"),
+            ],
             published_after=datetime.date(2022, 1, 1),
             published_before=datetime.date(2023, 1, 1),
         )
@@ -110,7 +113,11 @@ class TestMilvusVectorSearchFilterTransformer:
         transformer = MilvusVectorSearchFilterTransformer("categories", "published_at")
 
         filters = VectorSearchFilter(
-            categories=[Category.from_string("cs.AI"), Category.from_string("econ"), Category.from_string("math")],
+            category_identifiers=[
+                model.CategoryIdentifier.from_string("cs.AI"),
+                model.CategoryIdentifier.from_string("econ"),
+                model.CategoryIdentifier.from_string("math"),
+            ],
         )
 
         result = transformer.transform(filters)
@@ -127,11 +134,11 @@ class TestMilvusVectorRepository:
 
         embeddings = [[0.1, 0.2, 0.3]]
         papers = [
-            Paper(
+            model.Paper(
                 arxiv_id="1234.5678",
                 title="",
                 abstract="",
-                categories=[Category.from_string("cs.AI")],
+                categories=[model.Category(model.CategoryIdentifier.from_string("cs.AI"))],
                 published_at=datetime.date(2022, 1, 1),
             ),
         ]
@@ -145,7 +152,7 @@ class TestMilvusVectorRepository:
                 "entity": {
                     "arxiv_id": "1234.5678",
                     "embedding": [0.1, 0.2, 0.3],
-                    "categories": ["cs.AI"],
+                    "category_identifiers": ["cs.AI"],
                     "published_at": 20220101,
                 },
             },
@@ -157,11 +164,11 @@ class TestMilvusVectorRepository:
 
         embeddings = [[0.1, 0.2, 0.3]]
         papers = [
-            Paper(
+            model.Paper(
                 arxiv_id="1234.5678",
                 title="",
                 abstract="",
-                categories=[Category.from_string("cs.AI")],
+                categories=[model.Category(model.CategoryIdentifier.from_string("cs.AI"))],
                 published_at=datetime.date(2022, 1, 1),
             ),
         ]
@@ -178,18 +185,18 @@ class TestMilvusVectorRepository:
 
         embeddings = [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
         papers = [
-            Paper(
+            model.Paper(
                 arxiv_id="1234.5678",
                 title="",
                 abstract="",
-                categories=[Category.from_string("cs.AI")],
+                categories=[model.Category(model.CategoryIdentifier.from_string("cs.AI"))],
                 published_at=datetime.date(2022, 1, 1),
             ),
-            Paper(
+            model.Paper(
                 arxiv_id="9876.5432",
                 title="",
                 abstract="",
-                categories=[Category.from_string("econ")],
+                categories=[model.Category(model.CategoryIdentifier.from_string("econ"))],
                 published_at=datetime.date(2023, 1, 1),
             ),
         ]
@@ -204,7 +211,7 @@ class TestMilvusVectorRepository:
                 "entity": {
                     "arxiv_id": "9876.5432",
                     "embedding": [0.4, 0.5, 0.6],
-                    "categories": ["econ"],
+                    "category_identifiers": ["econ"],
                     "published_at": 20230101,
                 },
             },
@@ -226,24 +233,24 @@ class TestMilvusVectorRepository:
 
         embeddings = [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
         papers = [
-            Paper(
+            model.Paper(
                 arxiv_id="1234.5678",
                 title="",
                 abstract="",
-                categories=[Category.from_string("cs.AI")],
+                categories=[model.Category(model.CategoryIdentifier.from_string("cs.AI"))],
                 published_at=datetime.date(2022, 1, 1),
             ),
-            Paper(
+            model.Paper(
                 arxiv_id="9876.5432",
                 title="",
                 abstract="",
-                categories=[Category.from_string("econ")],
+                categories=[model.Category(model.CategoryIdentifier.from_string("econ"))],
                 published_at=datetime.date(2023, 1, 1),
             ),
         ]
         repository.insert_embeddings(embeddings, papers)
 
-        result = repository.query_embedding([0.1, 0.5, 0.1], 1, None)
+        result = repository.query_embedding([0.1, 0.5, 0.1], top_k=1, filters=None)
 
         assert result == ["1234.5678"]
 
@@ -253,18 +260,18 @@ class TestMilvusVectorRepository:
 
         embeddings = [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
         papers = [
-            Paper(
+            model.Paper(
                 arxiv_id="1234.5678",
                 title="",
                 abstract="",
-                categories=[Category.from_string("cs.AI")],
+                categories=[model.Category(model.CategoryIdentifier.from_string("cs.AI"))],
                 published_at=datetime.date(2022, 1, 1),
             ),
-            Paper(
+            model.Paper(
                 arxiv_id="9876.5432",
                 title="",
                 abstract="",
-                categories=[Category.from_string("econ")],
+                categories=[model.Category(model.CategoryIdentifier.from_string("econ"))],
                 published_at=datetime.date(2023, 1, 1),
             ),
         ]
@@ -274,4 +281,4 @@ class TestMilvusVectorRepository:
             VectoryRepositoryQueryError,
             match=f"Error querying Milvus collection {repository.COLLECTION_NAME!r}.",
         ):
-            repository.query_embedding([0.1, 0.5, 0.1], 1, None)
+            repository.query_embedding([0.1, 0.5, 0.1], top_k=1, filters=None)

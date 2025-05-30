@@ -3,19 +3,22 @@ import datetime
 import pytest
 from sqlalchemy.orm import Session, sessionmaker
 
-from arxivist.domain.model import Category, Paper
+from arxivist.domain import model
 from arxivist.infrastructure.persistence.repository import SqlAlchemyPaperRepository
 from arxivist.infrastructure.persistence.unit_of_work import SqlAlchemyUnitOfWork
 
 
 @pytest.fixture
-def sample_paper() -> Paper:
-    return Paper(
+def sample_paper() -> model.Paper:
+    return model.Paper(
         arxiv_id="2025.12345",
         title="Sample Paper",
         abstract="This is a sample abstract.",
         published_at=datetime.date(2025, 1, 1),
-        categories=[Category("cs", "CV"), Category("cs", "CL")],
+        categories=[
+            model.Category(model.CategoryIdentifier("cs", "CV")),
+            model.Category(model.CategoryIdentifier("cs", "CL")),
+        ],
     )
 
 
@@ -23,11 +26,12 @@ class TestSqlAlchemyUnitOfWork:
     def test_commit(
         self,
         in_memory_sqlite_session_factory: sessionmaker[Session],
-        sample_paper: Paper,
+        sample_paper: model.Paper,
     ) -> None:
         uow = SqlAlchemyUnitOfWork(in_memory_sqlite_session_factory)
         with uow:
-            uow.papers.upsert_paper(sample_paper)
+            uow.papers.upsert_categories(sample_paper.categories)
+            uow.papers.upsert_papers([sample_paper])
             uow.commit()
 
         with uow:
@@ -40,17 +44,18 @@ class TestSqlAlchemyUnitOfWork:
             assert set(retrieved_paper.categories) == set(sample_paper.categories)
 
         with uow:
-            uow.papers.delete_paper(sample_paper.arxiv_id)
+            uow.papers.delete_papers([sample_paper.arxiv_id])
             uow.commit()
 
     def test_implicit_rollback(
         self,
         in_memory_sqlite_session_factory: sessionmaker[Session],
-        sample_paper: Paper,
+        sample_paper: model.Paper,
     ) -> None:
         uow = SqlAlchemyUnitOfWork(in_memory_sqlite_session_factory)
         with uow:
-            uow.papers.upsert_paper(sample_paper)
+            uow.papers.upsert_categories(sample_paper.categories)
+            uow.papers.upsert_papers([sample_paper])
 
         with uow:
             retrieved_paper = uow.papers.get_paper(sample_paper.arxiv_id)
@@ -59,11 +64,12 @@ class TestSqlAlchemyUnitOfWork:
     def test_explicit_rollback(
         self,
         in_memory_sqlite_session_factory: sessionmaker[Session],
-        sample_paper: Paper,
+        sample_paper: model.Paper,
     ) -> None:
         uow = SqlAlchemyUnitOfWork(in_memory_sqlite_session_factory)
         with uow:
-            uow.papers.upsert_paper(sample_paper)
+            uow.papers.upsert_categories(sample_paper.categories)
+            uow.papers.upsert_papers([sample_paper])
             uow.rollback()
 
         with uow:

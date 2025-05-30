@@ -30,11 +30,16 @@ class ArXivRSSPaperExtractor(AbstractArXivPaperExtractor):
         """
         self.rss_url = rss_url
 
-    def fetch_latest_papers(self, categories: list[model.Category]) -> list[PaperDTO]:
+    @property
+    def limit(self) -> int:
+        """The maximum number of papers that the extractor can fetch at once."""
+        return 2000
+
+    def fetch_latest_papers(self, category_identifiers: list[model.CategoryIdentifier]) -> list[PaperDTO]:
         """Fetch the latest papers from the ArXiv RSS feed for the given categories.
 
         Args:
-            categories: The `Category` domain objects to filter the papers by.
+            category_identifiers: The `CategoryIdentifier` domain objects to filter the papers by.
 
         Raises:
             PaperMissingFieldError: If a required field is missing in the paper.
@@ -43,7 +48,7 @@ class ArXivRSSPaperExtractor(AbstractArXivPaperExtractor):
             A list of `PaperDTO` objects representing the papers.
         """
         papers: list[PaperDTO] = []
-        arxiv_rss_url = f"{self.rss_url}{'+'.join(category.identifier for category in categories)}"
+        arxiv_rss_url = f"{self.rss_url}{'+'.join(map(str, category_identifiers))}"
         entries: list[dict[str, Any]] = feedparser.parse(arxiv_rss_url).get("entries", [])  # type: ignore[no-untyped-call]
 
         for entry in entries:
@@ -249,7 +254,18 @@ class ArXivCategoryExtractor(AbstractArXivCategoryExtractor):
                         ),
                     )
 
-        return categories
+        archive_categories = {
+            CategoryDTO(
+                archive=category.archive,
+                subcategory=None,
+                archive_name=category.archive_name,
+                category_name=None,
+                description=None,
+            )
+            for category in categories
+            if category.subcategory is not None
+        }
+        return categories + list(archive_categories)
 
     def _parse_group_header(self, element: Tag) -> tuple[str, None, None, None, None]:
         """Parses the group header element.

@@ -32,7 +32,7 @@ class TestArXivRSSPaperExtractor:
 
         client = ArXivRSSPaperExtractor()
         with patch("feedparser.parse", return_value=mock_response):
-            papers = client.fetch_latest_papers([model.Category(archive="cs", subcategory="CV")])
+            papers = client.fetch_latest_papers([model.CategoryIdentifier("cs", "CV")])
 
         assert len(papers) == 2
         paper_1, paper_2 = papers
@@ -58,14 +58,14 @@ class TestArXivRSSPaperExtractor:
             patch("feedparser.parse", return_value=mock_response),
             pytest.raises(PaperMissingFieldError, match="Missing required field 'id' in the paper"),
         ):
-            client.fetch_latest_papers([model.Category(archive="cs", subcategory="CV")])
+            client.fetch_latest_papers([model.CategoryIdentifier("cs", "CV")])
 
     def test_fetch_papers_empty_entries(self) -> None:
         mock_response = {}
 
         client = ArXivRSSPaperExtractor()
         with patch("feedparser.parse", return_value=mock_response):
-            papers = client.fetch_latest_papers([model.Category(archive="cs", subcategory="CV")])
+            papers = client.fetch_latest_papers([model.CategoryIdentifier("cs", "CV")])
 
         assert papers == []
 
@@ -145,7 +145,18 @@ class TestArXivCategoryExtractor:
             )
             for group_name, cats in category_data.items()
             for cat in cats
-        ]
+        ] + list({
+            CategoryDTO(
+                archive=cat["archive"],
+                subcategory=None,
+                archive_name=cat.get("archive_name", group_name),
+                category_name=None,
+                description=None,
+            )
+            for group_name, cats in category_data.items()
+            for cat in cats
+            if cat.get("subcategory") is not None
+        })
 
         assert categories == expected_categories
 

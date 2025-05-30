@@ -45,7 +45,7 @@ class PaperDTO:
     """The categories the paper belongs to."""
 
     def __eq__(self, other: object) -> bool:
-        """Checks if two `PaperDTO` objects are equal.
+        """Check if two `PaperDTO` objects are equal.
 
         Args:
             other: The other object to compare with.
@@ -54,23 +54,16 @@ class PaperDTO:
             True if the objects are equal, False otherwise.
         """
         if not isinstance(other, PaperDTO):
-            return False
-
-        return (
-            self.arxiv_id == other.arxiv_id
-            and self.title == other.title
-            and self.abstract == other.abstract
-            and self.published_at == other.published_at
-            and self.categories == other.categories
-        )
+            return NotImplemented
+        return self.arxiv_id == other.arxiv_id
 
     def __hash__(self) -> int:
-        """Generates a hash for the `PaperDTO` object.
+        """Return the hash value of the `PaperDTO` object.
 
         Returns:
-            The hash value of the object.
+            The hash value of the `PaperDTO` object.
         """
-        return hash((self.arxiv_id, self.title, self.abstract, self.published_at, tuple(self.categories)))
+        return hash(self.arxiv_id)
 
 
 @dataclass(frozen=True)
@@ -92,44 +85,22 @@ class CategoryDTO:
     description: str | None
     """The description of the category."""
 
-    def __eq__(self, other: object) -> bool:
-        """Checks if two `CategoryDTO` objects are equal.
-
-        Args:
-            other: The other object to compare with.
-
-        Returns:
-            True if the objects are equal, False otherwise.
-        """
-        if not isinstance(other, CategoryDTO):
-            return False
-
-        return (
-            self.archive == other.archive
-            and self.subcategory == other.subcategory
-            and self.archive_name == other.archive_name
-            and self.category_name == other.category_name
-            and self.description == other.description
-        )
-
-    def __hash__(self) -> int:
-        """Generates a hash for the `CategoryDTO` object.
-
-        Returns:
-            The hash value of the object.
-        """
-        return hash((self.archive, self.subcategory, self.archive_name, self.category_name, self.description))
-
 
 class AbstractArXivPaperExtractor(ABC):
     """Abstract paper extractor for fetching papers from ArXiv."""
 
+    @property
     @abstractmethod
-    def fetch_latest_papers(self, categories: list[model.Category]) -> list[PaperDTO]:
+    def limit(self) -> int:
+        """The maximum number of papers that the extractor can fetch at once."""
+        ...
+
+    @abstractmethod
+    def fetch_latest_papers(self, category_identifiers: list[model.CategoryIdentifier]) -> list[PaperDTO]:
         """Fetches the latest papers from the ArXiv RSS feed for the given categories.
 
         Args:
-            categories: The `Category` domain objects to filter the papers by.
+            category_identifiers: The `CategoryIdentifier` domain objects to filter the papers by.
 
         Raises:
             PaperMissingFieldError: If a required field is missing in the paper.
